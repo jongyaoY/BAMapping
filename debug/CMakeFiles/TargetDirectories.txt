@@ -1,0 +1,4 @@
+/home/user/BAMapping/debug/CMakeFiles/rebuild_cache.dir
+/home/user/BAMapping/debug/CMakeFiles/edit_cache.dir
+/home/user/BAMapping/debug/CMakeFiles/BAMapping.dir
+/home/user/BAMapping/debug/CMakeFiles/System.dir

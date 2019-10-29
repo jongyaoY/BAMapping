@@ -36,6 +36,8 @@ add_library(${PROJECT_NAME} SHARED
             src/util/Optimize.cpp
             src/util/Point.cpp
             src/util/Frame.cpp
+            src/util/BundleAdjuster.cpp
+            src/util/bal_problem.cpp
             src/Viewer.cpp
             src/Reader.cpp)
 
