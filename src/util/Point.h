@@ -9,12 +9,11 @@ public:
     typedef Eigen::Vector3i Color;
 
     Point();
+    ~Point();
+    inline double* mutablePose() { return m_p; }
 
-    Pose p;
-//    void setPose(Pose p);
-//    void setColor(Color c);
-//    inline Pose getPose(){return p;}
-//    inline Color getColor(){return color;}
+    Pose pose;
+    double *m_p;
     Color color;
     float pointSize; //in meter
 protected:

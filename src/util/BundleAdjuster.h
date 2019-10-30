@@ -14,10 +14,14 @@
 #include "glog/logging.h"
 
 #include "bal_problem.h"
+#include "Graph.h"
 
 using namespace ceres;
 class BundleAdjuster
 {
+//    class Frame;
+//    class Point;
+//    class Graph;
 public:
     BundleAdjuster();
     void SetLinearSolver(Solver::Options* options);
@@ -26,7 +30,54 @@ public:
     void SetSolverOptionsFromFlags(BALProblem* bal_problem, Solver::Options* options);
     void BuildProblem(BALProblem* bal_problem, Problem* problem);
     void SolveProblem(const char* filename);
+
+    static void BuildProblem(Graph *graph,Problem* problem);
+
 };
+
+
+struct Error {
+   Error(double observed_x, double observed_y)
+      : observed_x(observed_x), observed_y(observed_y) {}
+
+  template <typename T>
+  bool operator()(const T* const camera,
+                  const T* const point,
+                  T* residuals) const
+  {
+
+    return true;
+  }
+
+   static ceres::CostFunction* Create(const double observed_x,
+                                      const double observed_y) {
+     return (new ceres::AutoDiffCostFunction<Error, 2, 10, 3>(
+                 new Error(observed_x, observed_y)));
+   }
+
+  double observed_x;
+  double observed_y;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 DEFINE_string(input, "", "Input File name");

@@ -9,7 +9,8 @@ BundleAdjuster::BundleAdjuster()
 
 }
 
-void BundleAdjuster::SetLinearSolver(Solver::Options* options) {
+void BundleAdjuster::SetLinearSolver(Solver::Options* options)
+{
   CHECK(StringToLinearSolverType(FLAGS_linear_solver,
                                  &options->linear_solver_type));
   CHECK(StringToPreconditionerType(FLAGS_preconditioner,
@@ -25,7 +26,8 @@ void BundleAdjuster::SetLinearSolver(Solver::Options* options) {
   options->use_explicit_schur_complement = FLAGS_explicit_schur_complement;
 }
 
-void BundleAdjuster::SetOrdering(BALProblem* bal_problem, Solver::Options* options) {
+void BundleAdjuster::SetOrdering(BALProblem* bal_problem, Solver::Options* options)
+{
   const int num_points = bal_problem->num_points();
   const int point_block_size = bal_problem->point_block_size();
   double* points = bal_problem->mutable_points();
@@ -34,43 +36,10 @@ void BundleAdjuster::SetOrdering(BALProblem* bal_problem, Solver::Options* optio
   const int camera_block_size = bal_problem->camera_block_size();
   double* cameras = bal_problem->mutable_cameras();
 
-  if (options->use_inner_iterations) {
-    if (FLAGS_blocks_for_inner_iterations == "cameras") {
-      LOG(INFO) << "Camera blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
-      for (int i = 0; i < num_cameras; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(cameras + camera_block_size * i, 0);
-      }
-    } else if (FLAGS_blocks_for_inner_iterations == "points") {
-      LOG(INFO) << "Point blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
-      for (int i = 0; i < num_points; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(points + point_block_size * i, 0);
-      }
-    } else if (FLAGS_blocks_for_inner_iterations == "cameras,points") {
-      LOG(INFO) << "Camera followed by point blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
-      for (int i = 0; i < num_cameras; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(cameras + camera_block_size * i, 0);
-      }
-      for (int i = 0; i < num_points; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(points + point_block_size * i, 1);
-      }
-    } else if (FLAGS_blocks_for_inner_iterations == "points,cameras") {
-      LOG(INFO) << "Point followed by camera blocks for inner iterations";
-      options->inner_iteration_ordering.reset(new ParameterBlockOrdering);
-      for (int i = 0; i < num_cameras; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(cameras + camera_block_size * i, 1);
-      }
-      for (int i = 0; i < num_points; ++i) {
-        options->inner_iteration_ordering->AddElementToGroup(points + point_block_size * i, 0);
-      }
-    } else if (FLAGS_blocks_for_inner_iterations == "automatic") {
-      LOG(INFO) << "Choosing automatic blocks for inner iterations";
-    } else {
-      LOG(FATAL) << "Unknown block type for inner iterations: "
-                 << FLAGS_blocks_for_inner_iterations;
-    }
+  if (options->use_inner_iterations)
+  {
+
+
   }
 
   // Bundle adjustment problems have a sparsity structure that makes
@@ -84,19 +53,18 @@ void BundleAdjuster::SetOrdering(BALProblem* bal_problem, Solver::Options* optio
   // the right ParameterBlock ordering, or by manually specifying a
   // suitable ordering vector and defining
   // Options::num_eliminate_blocks.
-  if (FLAGS_ordering == "automatic") {
-    return;
-  }
 
   ceres::ParameterBlockOrdering* ordering =
       new ceres::ParameterBlockOrdering;
-
+  //first eliminate points. after solvine cameras,substitute back to solve points
   // The points come before the cameras.
-  for (int i = 0; i < num_points; ++i) {
+  for (int i = 0; i < num_points; ++i)
+  {
     ordering->AddElementToGroup(points + point_block_size * i, 0);
   }
 
-  for (int i = 0; i < num_cameras; ++i) {
+  for (int i = 0; i < num_cameras; ++i)
+  {
     // When using axis-angle, there is a single parameter block for
     // the entire camera.
     ordering->AddElementToGroup(cameras + camera_block_size * i, 1);
@@ -105,7 +73,8 @@ void BundleAdjuster::SetOrdering(BALProblem* bal_problem, Solver::Options* optio
   options->linear_solver_ordering.reset(ordering);
 }
 
-void BundleAdjuster::SetMinimizerOptions(Solver::Options* options) {
+void BundleAdjuster::SetMinimizerOptions(Solver::Options* options)
+{
   options->max_num_iterations = FLAGS_num_iterations;
   options->minimizer_progress_to_stdout = true;
   options->num_threads = FLAGS_num_threads;
@@ -130,7 +99,8 @@ void BundleAdjuster::SetSolverOptionsFromFlags(BALProblem* bal_problem,
   SetOrdering(bal_problem, options);
 }
 
-void BundleAdjuster::BuildProblem(BALProblem* bal_problem, Problem* problem) {
+void BundleAdjuster::BuildProblem(BALProblem* bal_problem, Problem* problem)
+{
   const int point_block_size = bal_problem->point_block_size();
   const int camera_block_size = bal_problem->camera_block_size();
   double* points = bal_problem->mutable_points();
@@ -140,7 +110,8 @@ void BundleAdjuster::BuildProblem(BALProblem* bal_problem, Problem* problem) {
   // [u_1, u_2, ... , u_n], where each u_i is two dimensional, the x
   // and y positions of the observation.
   const double* observations = bal_problem->observations();
-  for (int i = 0; i < bal_problem->num_observations(); ++i) {
+  for (int i = 0; i < bal_problem->num_observations(); ++i)
+  {
     CostFunction* cost_function;
     // Each Residual block takes a point and a camera as input and
     // outputs a 2 dimensional residual.
@@ -165,12 +136,14 @@ void BundleAdjuster::BuildProblem(BALProblem* bal_problem, Problem* problem) {
     problem->AddResidualBlock(cost_function, loss_function, camera, point);
   }
 
-  if (FLAGS_use_quaternions && FLAGS_use_local_parameterization) {
+  if (FLAGS_use_quaternions && FLAGS_use_local_parameterization)
+  {
     LocalParameterization* camera_parameterization =
         new ProductParameterization(
             new QuaternionParameterization(),
             new IdentityParameterization(6));
-    for (int i = 0; i < bal_problem->num_cameras(); ++i) {
+    for (int i = 0; i < bal_problem->num_cameras(); ++i)
+    {
       problem->SetParameterization(cameras + camera_block_size * i,
                                    camera_parameterization);
     }
@@ -181,7 +154,8 @@ void BundleAdjuster::SolveProblem(const char* filename)
 {
   BALProblem bal_problem(filename, FLAGS_use_quaternions);
 
-  if (!FLAGS_initial_ply.empty()) {
+  if (!FLAGS_initial_ply.empty())
+  {
     bal_problem.WriteToPLYFile(FLAGS_initial_ply);
   }
 
@@ -207,3 +181,24 @@ void BundleAdjuster::SolveProblem(const char* filename)
   }
 }
 
+void BundleAdjuster::BuildProblem(Graph *graph,Problem* problem)
+{
+    FrameVector *pFrames = graph->getFrames();
+    PointVector *pPoints = graph->getPoints();
+    FrameVector::iterator frameIt = pFrames->begin();
+    for(;frameIt!=pFrames->end();frameIt++)
+    {
+
+        Frame::ObservationVector observations = frameIt->getObservations();
+        Frame::ObservationVector::const_iterator obsIt = observations.begin();
+        for(;obsIt != observations.end(); obsIt++)
+        {
+            Point point = (*pPoints)[obsIt->first];
+            CostFunction* cost_function;
+            cost_function = Error::Create(obsIt->second[0], obsIt->second[1]);
+            LossFunction* loss_function = new HuberLoss(1.0);
+
+            problem->AddResidualBlock(cost_function, loss_function, frameIt->getMutable(), point.mutablePose());
+        }
+    }
+}

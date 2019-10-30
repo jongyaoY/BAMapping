@@ -97,7 +97,7 @@ void Viewer::drawPoint(const Point point)
     glPointSize(10*point.pointSize); //cm
     glBegin(GL_POINTS);
     glColor3f(point.color[0],point.color[1],point.color[2]);
-    glVertex3f(point.p[0],point.p[1],point.p[2]);
+    glVertex3f(point.pose[0],point.pose[1],point.pose[2]);
     glEnd();
 }
 
