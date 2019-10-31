@@ -19,19 +19,16 @@
 using namespace ceres;
 class BundleAdjuster
 {
-//    class Frame;
-//    class Point;
-//    class Graph;
+
 public:
     BundleAdjuster();
-    void SetLinearSolver(Solver::Options* options);
-    void SetOrdering(BALProblem* bal_problem, Solver::Options* options);
-    void SetMinimizerOptions(Solver::Options* options);
-    void SetSolverOptionsFromFlags(BALProblem* bal_problem, Solver::Options* options);
-    void BuildProblem(BALProblem* bal_problem, Problem* problem);
-    void SolveProblem(const char* filename);
+    static void SetLinearSolver(Solver::Options* options);
+    static void SetMinimizerOptions(Solver::Options* options);
 
+    static void SetSolverOptions(Graph* graph, Solver::Options* options);
+    static void SetOrdering(Graph* graph, Solver::Options* options);
     static void BuildProblem(Graph *graph,Problem* problem);
+    static void solve(Graph *graph);
 
 };
 

@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     Viewer viewer;
     Reader reader;
     FrameVector frame_vec;
-    reader.read(frame_vec,"../files/camera");
+    reader.readFrames(frame_vec,"../files/camera");
     viewer.setFrames(frame_vec);
     viewer.visualize();
     return 0;

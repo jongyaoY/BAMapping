@@ -10,7 +10,7 @@ class Reader
 {
 public:
     Reader();
-    static bool read(FrameVector &frame_vec,const char* fileName);
+    static bool readFrames(FrameVector &frame_vec,const char* fileName);
 };
 
 #endif // READER_H

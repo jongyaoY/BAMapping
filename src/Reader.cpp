@@ -4,7 +4,7 @@ Reader::Reader()
 {
 }
 
-bool Reader::read(FrameVector &frame_vec,const char* fileName)
+bool Reader::readFrames(FrameVector &frame_vec,const char* fileName)
 {
     FILE* pF;
     pF = fopen(fileName,"r");
