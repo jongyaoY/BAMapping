@@ -18,7 +18,8 @@ typedef Eigen::Map<Eigen::VectorXd> VectorRef;
 typedef Eigen::Map<const Eigen::VectorXd> ConstVectorRef;
 
 template<typename T>
-void FscanfOrDie(FILE* fptr, const char* format, T* value) {
+void FscanfOrDie(FILE* fptr, const char* format, T* value)
+{
   int num_scanned = fscanf(fptr, format, value);
   if (num_scanned != 1) {
     LOG(FATAL) << "Invalid UW data file.";
@@ -78,13 +79,15 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
   fclose(fptr);
 
   use_quaternions_ = use_quaternions;
-  if (use_quaternions) {
+  if (use_quaternions)
+  {
     // Switch the angle-axis rotations to quaternions.
     num_parameters_ = 10 * num_cameras_ + 3 * num_points_;
     double* quaternion_parameters = new double[num_parameters_];
     double* original_cursor = parameters_;
     double* quaternion_cursor = quaternion_parameters;
-    for (int i = 0; i < num_cameras_; ++i) {
+    for (int i = 0; i < num_cameras_; ++i)
+    {
       AngleAxisToQuaternion(original_cursor, quaternion_cursor);
       quaternion_cursor += 4;
       original_cursor += 3;
@@ -93,7 +96,8 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
       }
     }
     // Copy the rest of the points.
-    for (int i = 0; i < 3 * num_points_; ++i) {
+    for (int i = 0; i < 3 * num_points_; ++i)
+    {
       *quaternion_cursor++ = *original_cursor++;
     }
     // Swap in the quaternion parameters.
@@ -124,6 +128,7 @@ void BALProblem::WriteToFile(const std::string& filename) const {
 
   for (int i = 0; i < num_cameras(); ++i) {
     double angleaxis[9];
+
     if (use_quaternions_) {
       // Output in angle-axis format.
       QuaternionToAngleAxis(parameters_ + 10 * i, angleaxis);
@@ -296,6 +301,81 @@ void BALProblem::Perturb(const double rotation_sigma,
       PerturbPoint3(translation_sigma, camera + camera_block_size() - 6);
     }
   }
+}
+void BALProblem::generateCameras()
+{
+    FILE* fptr = fopen("../cameras", "w");
+
+    if (fptr == NULL)
+    {
+      return;
+    };
+
+    for (int i = 0; i < num_cameras(); ++i)
+    {
+      double angleaxis[9];
+      double quaternion[10]; //qw qx qy qz x y z + 3 intrinsic
+      if (use_quaternions_)
+      {
+        // Output in angle-axis format.
+        QuaternionToAngleAxis(parameters_ + 10 * i, angleaxis);
+        memcpy(angleaxis + 3, parameters_ + 10 * i + 4, 6 * sizeof(double));
+        memcpy(quaternion, parameters_ + 10 * i, 10 * sizeof(double));
+      }
+      else
+      {
+        memcpy(angleaxis, parameters_ + 9 * i, 9 * sizeof(double));
+      }
+//      for (int j = 0; j < 9; ++j)
+//      {
+//        fprintf(fptr, "%.16g ", angleaxis[j]);
+//      }
+        for (int j = 0; j < 10; ++j)
+        {
+          fprintf(fptr, "%.16g ", quaternion[j]);
+        }
+      fprintf(fptr, "\n");
+    }
+}
+
+void BALProblem::generateObeservations()
+{
+    FILE* fptr = fopen("../obervations", "w");
+
+    if (fptr == NULL)
+    {
+      return;
+    };
+    for (int i = 0; i < num_observations_; ++i)
+    {
+      fprintf(fptr, "%d %d", camera_index_[i], point_index_[i]);
+      for (int j = 0; j < 2; ++j)
+      {
+        fprintf(fptr, " %g", observations_[2 * i + j]);
+      }
+      fprintf(fptr, "\n");
+    }
+}
+
+void BALProblem::generatePoints()
+{
+    FILE* fptr = fopen("../points", "w");
+
+    if (fptr == NULL)
+    {
+      return;
+    };
+
+    const double* points = parameters_ + camera_block_size() * num_cameras_;
+    for (int i = 0; i < num_points(); ++i)
+    {
+      const double* point = points + i * point_block_size();
+      for (int j = 0; j < point_block_size(); ++j)
+      {
+        fprintf(fptr, "%.16g ", point[j]);
+      }
+      fprintf(fptr, "\n");
+    }
 }
 
 BALProblem::~BALProblem() {

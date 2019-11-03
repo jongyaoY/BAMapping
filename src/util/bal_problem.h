@@ -13,7 +13,9 @@ class BALProblem {
 
   void WriteToFile(const std::string& filename) const;
   void WriteToPLYFile(const std::string& filename) const;
-
+  void generateCameras();
+  void generateObeservations();
+  void generatePoints();
   // Move the "center" of the reconstruction to the origin, where the
   // center is determined by computing the marginal median of the
   // points. The reconstruction is then scaled so that the median

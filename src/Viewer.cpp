@@ -2,28 +2,7 @@
 #include <math.h>
 Viewer::Viewer()
 {
-//    for(int i = 0; i < 100; i++)
-//    {
-//        Point p;
-//        p.p[0] = i;
-//        p.p[1] = 10*sin(i*3.14/50);
-//        p.p[2] = 0;
-//        m_points.push_back(p);
-//    }
-//    for(int i = 0; i < 10 ; i++)
-//    {
-//        Eigen::Matrix4f T;
-//        T = Eigen::Matrix4f::Identity();
-//        float c = cos(i*3.14/5);
-//        float s = sin(i*3.14/5);
-//        T.topLeftCorner(3,3)<<c,-s,0,
-//                              s, c,0,
-//                              0, 0,1;
-//        T.rightCols(1)<<i,0,0,1;
-//        Frame f;
-//        f.Tcw = T;
-//        m_frames.push_back(f);
-//    }
+
 }
 void Viewer::visualize()
 {
@@ -63,14 +42,14 @@ void Viewer::visualize()
         // Clear screen and activate view to render into
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
-        for(int i = 0;i < m_frames.size(); i++)
+        for(int i = 0;; i++)
         {
-            drawFrame(m_frames[i]);
+//            drawFrame(*m_frames[i]);
             if(i>0)
             {
                 Eigen::Vector3f last,curr;
-                last = m_frames[i-1].Tcw.topRightCorner(3,1);
-                curr = m_frames[i].Tcw.topRightCorner(3,1);
+//                last = m_frames[i-1]->Tcw.topRightCorner(3,1);
+//                curr = m_frames[i]->Tcw.topRightCorner(3,1);
                 glLineWidth(1);
                 glColor3f(0.0f,1.0f,0.0f);
                 glBegin(GL_LINES);
@@ -83,7 +62,7 @@ void Viewer::visualize()
 //        pangolin::glDrawColouredCube();
         for(auto point : m_points)
         {
-            drawPoint(point);
+//            drawPoint(point);
         }
         // Swap frames and Process Events
         pangolin::FinishFrame();
@@ -109,11 +88,11 @@ void Viewer::drawFrame(Frame frame)
 //                    0.0,0.0,1.0,0.0,
 //                    0,0,0,1};
 
-    GLfloat *m = frame.Tcw.data();
-    glMultMatrixf(m);
+//    GLfloat *m = frame.Tcw.data();
+//    glMultMatrixf(m);
 
     float w,h,z;
-    w = frame.frameSize; //in meter
+//    w = frame.frameSize; //in meter
     h = 0.6*w;
     z = 0.5*w;
     glLineWidth(1);

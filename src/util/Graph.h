@@ -7,14 +7,16 @@ class Graph
 {
 public:
     Graph();
-
-    inline FrameVector* getFrames() {return &m_frameVec;}
-    inline PointVector* getPoints() {return &m_pointVec;}
+    void addFrame(Frame frame);
+    void setFrames(FramePtrVector framePtrs);
+    void setPoints(PointPtrMap pointPtrs);
+    inline FramePtrVector& getFrames() {return m_framePtrs;}
+    inline PointPtrMap& getPoints() {return m_pointPtrs;}
     int point_block_size;
     int frame_block_size;
 private:
-    FrameVector m_frameVec;
-    PointVector m_pointVec;
+    FramePtrVector m_framePtrs;
+    PointPtrMap m_pointPtrs;
 };
 
 #endif // GRAPH_H

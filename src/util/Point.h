@@ -10,15 +10,18 @@ public:
 
     Point();
     ~Point();
-    inline double* mutablePose() { return m_p; }
+    inline double* getMutable() { return m_p; }
 
-    Pose pose;
-    double *m_p;
-    Color color;
+    //for viewer
     float pointSize; //in meter
-protected:
+    Pose pose;
+    Color color;
+private:
+    double *m_p;
+
 };
 
 typedef std::vector<Point> PointVector;
+typedef std::map<unsigned int,Point*> PointPtrMap;
 
 #endif // POINT_H
