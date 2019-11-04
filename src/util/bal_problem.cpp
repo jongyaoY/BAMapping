@@ -314,13 +314,12 @@ void BALProblem::generateCameras()
     for (int i = 0; i < num_cameras(); ++i)
     {
       double angleaxis[9];
-      double quaternion[10]; //qw qx qy qz x y z + 3 intrinsic
+      double *quaternion; //qw qx qy qz x y z + 3 intrinsic
       if (use_quaternions_)
       {
         // Output in angle-axis format.
         QuaternionToAngleAxis(parameters_ + 10 * i, angleaxis);
         memcpy(angleaxis + 3, parameters_ + 10 * i + 4, 6 * sizeof(double));
-        memcpy(quaternion, parameters_ + 10 * i, 10 * sizeof(double));
       }
       else
       {
@@ -330,17 +329,19 @@ void BALProblem::generateCameras()
 //      {
 //        fprintf(fptr, "%.16g ", angleaxis[j]);
 //      }
+      quaternion = parameters_ + 10 * i;
         for (int j = 0; j < 10; ++j)
         {
           fprintf(fptr, "%.16g ", quaternion[j]);
         }
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 void BALProblem::generateObeservations()
 {
-    FILE* fptr = fopen("../obervations", "w");
+    FILE* fptr = fopen("../observations", "w");
 
     if (fptr == NULL)
     {
@@ -355,6 +356,7 @@ void BALProblem::generateObeservations()
       }
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 void BALProblem::generatePoints()
@@ -376,6 +378,7 @@ void BALProblem::generatePoints()
       }
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 BALProblem::~BALProblem() {

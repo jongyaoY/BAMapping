@@ -9,6 +9,7 @@ public:
     typedef Eigen::Vector3i Color;
 
     Point();
+    Point(double x, double y, double z);
     ~Point();
     inline double* getMutable() { return m_p; }
 
