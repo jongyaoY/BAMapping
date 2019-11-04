@@ -12,13 +12,14 @@ class Viewer
 public:
     Viewer();
     void visualize();
-//    inline void setFrames(FrameVector frames){m_frames = frames;}
+    inline void setPoints(PointVector points){m_points = points;}
+    inline void setFrames(FrameVector frames){m_frames = frames;}
 private:
     void drawPoint(const Point point);
     void drawFrame(const Frame frame);
 
     PointVector m_points;
-//    FrameVector m_frames;
+    FrameVector m_frames;
 };
 
 #endif // VIEWER_H

@@ -42,14 +42,14 @@ void Viewer::visualize()
         // Clear screen and activate view to render into
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
-        for(int i = 0;; i++)
+        for(int i = 0;m_frames.size(); i++)
         {
-//            drawFrame(*m_frames[i]);
+            drawFrame(m_frames[i]);
             if(i>0)
             {
                 Eigen::Vector3f last,curr;
-//                last = m_frames[i-1]->Tcw.topRightCorner(3,1);
-//                curr = m_frames[i]->Tcw.topRightCorner(3,1);
+                last = m_frames[i-1].getConstPose().topRightCorner(3,1);
+                curr = m_frames[i].getConstPose().topRightCorner(3,1);
                 glLineWidth(1);
                 glColor3f(0.0f,1.0f,0.0f);
                 glBegin(GL_LINES);
@@ -62,7 +62,7 @@ void Viewer::visualize()
 //        pangolin::glDrawColouredCube();
         for(auto point : m_points)
         {
-//            drawPoint(point);
+            drawPoint(point);
         }
         // Swap frames and Process Events
         pangolin::FinishFrame();
@@ -83,16 +83,14 @@ void Viewer::drawPoint(const Point point)
 void Viewer::drawFrame(Frame frame)
 {
     glPushMatrix();
-//    GLfloat m[16] = {1.0,0.0,0.0,0.0,
-//                    0.0,1.0,0.0,0.0,
-//                    0.0,0.0,1.0,0.0,
-//                    0,0,0,1};
 
-//    GLfloat *m = frame.Tcw.data();
-//    glMultMatrixf(m);
+    Frame::Pose Tcw;
+    Tcw = frame.getConstPose();
+    GLfloat *m = Tcw.data();
+    glMultMatrixf(m);
 
     float w,h,z;
-//    w = frame.frameSize; //in meter
+    w = frame.frameSize; //in meter
     h = 0.6*w;
     z = 0.5*w;
     glLineWidth(1);
