@@ -18,5 +18,8 @@ int main(int argc, char** argv)
     Reader reader;
     Graph graph;
     reader.readFrames(&graph,"../files/cameras","../files/observations");
+    reader.readPoints(&graph,"../files/points");
+    BundleAdjuster BA;
+    BA.solve(&graph);
     return 0;
 }

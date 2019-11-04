@@ -304,7 +304,7 @@ void BALProblem::Perturb(const double rotation_sigma,
 }
 void BALProblem::generateCameras()
 {
-    FILE* fptr = fopen("../cameras", "w");
+    FILE* fptr = fopen("../files/cameras", "w");
 
     if (fptr == NULL)
     {
@@ -341,7 +341,7 @@ void BALProblem::generateCameras()
 
 void BALProblem::generateObeservations()
 {
-    FILE* fptr = fopen("../observations", "w");
+    FILE* fptr = fopen("../files/observations", "w");
 
     if (fptr == NULL)
     {
@@ -361,7 +361,7 @@ void BALProblem::generateObeservations()
 
 void BALProblem::generatePoints()
 {
-    FILE* fptr = fopen("../points", "w");
+    FILE* fptr = fopen("../files/points", "w");
 
     if (fptr == NULL)
     {

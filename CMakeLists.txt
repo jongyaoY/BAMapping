@@ -51,4 +51,7 @@ target_link_libraries(${PROJECT_NAME}
 add_executable(System src/System.cpp)
 target_link_libraries(System ${PROJECT_NAME})
 
+add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
+target_link_libraries(test_bundleAdjuster ${PROJECT_NAME})
+
 
