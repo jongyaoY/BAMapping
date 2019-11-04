@@ -43,8 +43,9 @@ double Median(std::vector<double>* data) {
 BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
   FILE* fptr = fopen(filename.c_str(), "r");
 
-  if (fptr == NULL) {
-    LOG(FATAL) << "Error: unable to open file " << filename;
+  if (fptr == NULL)
+  {
+//    LOG(FATAL) << "Error: unable to open file " << filename;
     return;
   };
 
@@ -53,9 +54,9 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
   FscanfOrDie(fptr, "%d", &num_points_);
   FscanfOrDie(fptr, "%d", &num_observations_);
 
-  VLOG(1) << "Header: " << num_cameras_
-          << " " << num_points_
-          << " " << num_observations_;
+//  VLOG(1) << "Header: " << num_cameras_
+//          << " " << num_points_
+//          << " " << num_observations_;
 
   point_index_ = new int[num_observations_];
   camera_index_ = new int[num_observations_];
@@ -64,7 +65,8 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
   num_parameters_ = 9 * num_cameras_ + 3 * num_points_;
   parameters_ = new double[num_parameters_];
 
-  for (int i = 0; i < num_observations_; ++i) {
+  for (int i = 0; i < num_observations_; ++i)
+  {
     FscanfOrDie(fptr, "%d", camera_index_ + i);
     FscanfOrDie(fptr, "%d", point_index_ + i);
     for (int j = 0; j < 2; ++j) {
@@ -72,7 +74,8 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
     }
   }
 
-  for (int i = 0; i < num_parameters_; ++i) {
+  for (int i = 0; i < num_parameters_; ++i)
+  {
     FscanfOrDie(fptr, "%lf", parameters_ + i);
   }
 
@@ -91,7 +94,8 @@ BALProblem::BALProblem(const std::string& filename, bool use_quaternions) {
       AngleAxisToQuaternion(original_cursor, quaternion_cursor);
       quaternion_cursor += 4;
       original_cursor += 3;
-      for (int j = 4; j < 10; ++j) {
+      for (int j = 4; j < 10; ++j)
+      {
        *quaternion_cursor++ = *original_cursor++;
       }
     }
@@ -304,7 +308,7 @@ void BALProblem::Perturb(const double rotation_sigma,
 }
 void BALProblem::generateCameras()
 {
-    FILE* fptr = fopen("../cameras", "w");
+    FILE* fptr = fopen("../files/cameras", "w");
 
     if (fptr == NULL)
     {
@@ -314,33 +318,35 @@ void BALProblem::generateCameras()
     for (int i = 0; i < num_cameras(); ++i)
     {
       double angleaxis[9];
-      double quaternion[10]; //qw qx qy qz x y z + 3 intrinsic
+      double *quaternion; //qw qx qy qz x y z + 3 intrinsic
       if (use_quaternions_)
       {
         // Output in angle-axis format.
         QuaternionToAngleAxis(parameters_ + 10 * i, angleaxis);
         memcpy(angleaxis + 3, parameters_ + 10 * i + 4, 6 * sizeof(double));
-        memcpy(quaternion, parameters_ + 10 * i, 10 * sizeof(double));
+        quaternion = parameters_ + 10 * i;
+          for (int j = 0; j < 10; ++j)
+          {
+            fprintf(fptr, "%.16g ", quaternion[j]);
+          }
       }
       else
       {
         memcpy(angleaxis, parameters_ + 9 * i, 9 * sizeof(double));
-      }
-//      for (int j = 0; j < 9; ++j)
-//      {
-//        fprintf(fptr, "%.16g ", angleaxis[j]);
-//      }
-        for (int j = 0; j < 10; ++j)
+        for (int j = 0; j < 9; ++j)
         {
-          fprintf(fptr, "%.16g ", quaternion[j]);
+          fprintf(fptr, "%.16g ", angleaxis[j]);
         }
+      }
+
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 void BALProblem::generateObeservations()
 {
-    FILE* fptr = fopen("../obervations", "w");
+    FILE* fptr = fopen("../files/observations", "w");
 
     if (fptr == NULL)
     {
@@ -355,11 +361,12 @@ void BALProblem::generateObeservations()
       }
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 void BALProblem::generatePoints()
 {
-    FILE* fptr = fopen("../points", "w");
+    FILE* fptr = fopen("../files/points", "w");
 
     if (fptr == NULL)
     {
@@ -376,6 +383,7 @@ void BALProblem::generatePoints()
       }
       fprintf(fptr, "\n");
     }
+    fclose(fptr);
 }
 
 BALProblem::~BALProblem() {

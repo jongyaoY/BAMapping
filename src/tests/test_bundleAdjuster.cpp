@@ -1,22 +1,31 @@
-#include "stdio.h"
+#include <stdio.h>
+#include "../Viewer.h"
+#include "../Reader.h"
+
 #include "../util/BundleAdjuster.h"
 #include "../util/bal_problem.h"
-#include "../Reader.h"
 
 int main(int argc, char** argv)
 {
     printf("test\n");
-    BALProblem bal_problem("problem-73-11032-pre.txt", true);
-    bal_problem.Normalize();
-    bal_problem.Perturb(0.1,
-                        0.1,
-                        0.1);
+    BALProblem bal_problem("problem-73-11032-pre.txt", false);
+//    bal_problem.Perturb(0.0,
+//                        0.0,
+//                        0.0);
+//    bal_problem.Normalize();
     bal_problem.generateCameras();
     bal_problem.generateObeservations();
     bal_problem.generatePoints();
 
     Reader reader;
+    Viewer viewer;
     Graph graph;
     reader.readFrames(&graph,"../files/cameras","../files/observations");
+    reader.readPoints(&graph,"../files/points");
+    BundleAdjuster BA;
+//    BA.solve(&graph);
+    viewer.setFrames(graph.getConstFrames());
+    viewer.setPoints(graph.getConstPoints());
+    viewer.visualize();
     return 0;
 }

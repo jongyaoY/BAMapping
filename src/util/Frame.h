@@ -23,10 +23,15 @@ public:
 //    Frame(Frame frame);
     Frame(Pose Tcw):m_Tcw(Tcw){}
     void addObservation(Observation obs);
-    double* getMutable(RotationType rotType = RotationType::Quaternion,bool withIntrinsic = false);
-    const ObservationVector getObservations()const {return m_Observations;}
-
     inline void setPose(Pose Tcw){m_Tcw = Tcw;}
+    template<typename T>
+    void setIntrinsics(const T fx, const T fy, const T cx, const T cy);
+    template<typename T>
+    void setDistortionFactors(const T k1, const T k2);
+
+    double* getMutable(RotationType rotType = RotationType::Quaternion);
+    const ObservationVector getObservations()const {return m_Observations;}
+    const unsigned int getObservationSize()const {return m_Observations.size();}
     inline const Pose getConstPose(){return m_Tcw;}
 
 
@@ -36,14 +41,14 @@ private:
     Pose m_Tcw;
     double *m_mutableParam;
     //intrisic parameters
-    double fx;
-    double fy;
-    double cx;  //principle point x
-    double cy;  //principle point y
+    double m_f;   //focal length
+    double m_fx;
+    double m_fy;
+    double m_cx;  //principle point x
+    double m_cy;  //principle point y
     //distortion coefficients
-    double k1;
-    double k2;
-    double k3;
+    double m_k1;   //(u',v') = (cx,cy) + (1 + k1*r^2 + k2*r^4)*(u-cx,v-cy);
+    double m_k2;   //r^2 = (u - cx)^2 + (v - cy)^2
     ObservationVector m_Observations;
 
     std::string m_rgbImgPath;
