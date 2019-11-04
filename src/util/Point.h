@@ -12,6 +12,7 @@ public:
     Point(double x, double y, double z);
     ~Point();
     inline double* getMutable() { return m_p; }
+    void getMutable(double* param);
     const Pose getConstPose();
 
     //for viewer

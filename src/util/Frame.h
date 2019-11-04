@@ -11,34 +11,36 @@ public:
     typedef Eigen::Matrix<float,4,4,Eigen::ColMajor> Pose;
     typedef std::pair<unsigned int,Eigen::Vector3d> Observation;
     typedef std::vector<Observation> ObservationVector;
-    typedef enum
-    {
-        Quaternion,
-        AxisAngle,
-        EulerAngle,
-        RotationMatrix
-    } RotationType;
 
     Frame();
 //    Frame(Frame frame);
-    Frame(Pose Tcw):m_Tcw(Tcw){}
+//    Frame(Pose Tcw):m_Tcw(Tcw){}
     void addObservation(Observation obs);
-    inline void setPose(Pose Tcw){m_Tcw = Tcw;}
+    inline void setPose(Pose Tcw)
+    {
+//        m_Tcw = Tcw;
+    }
+    inline void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point){m_angleAxis = angleAxis;m_translation = point;}
     template<typename T>
     void setIntrinsics(const T fx, const T fy, const T cx, const T cy);
     template<typename T>
     void setDistortionFactors(const T k1, const T k2);
 
-    double* getMutable(RotationType rotType = RotationType::Quaternion);
+    double* getMutable();
+    void getMutable(double* param);
     const ObservationVector getObservations()const {return m_Observations;}
     const unsigned int getObservationSize()const {return m_Observations.size();}
-    inline const Pose getConstPose(){return m_Tcw;}
+//    inline const Pose getConstPose(){return m_Tcw;}
+    const Pose getConstTwc();
 
 
     float frameSize; //in meter
 private:
+    //for viewer
     double m_timeStamp;
-    Pose m_Tcw;
+    //for optimization
+    Eigen::AngleAxisd m_angleAxis;
+    Eigen::Vector3d m_translation;
     double *m_mutableParam;
     //intrisic parameters
     double m_f;   //focal length

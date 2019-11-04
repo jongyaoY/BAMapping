@@ -26,3 +26,10 @@ const Point::Pose Point::getConstPose()
     Pose p(m_p[0],m_p[1],m_p[2]);
     return p;
 }
+
+void Point::getMutable(double* param)
+{
+    *(param+0) = m_p[0];
+    *(param+1) = m_p[1];
+    *(param+2) = m_p[2];
+}

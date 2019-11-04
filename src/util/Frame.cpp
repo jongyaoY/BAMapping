@@ -2,10 +2,10 @@
 
 Frame::Frame()
 {
-    m_Tcw = Pose::Identity();
+//    m_Tcw = Pose::Identity();
     m_k1 = 0.;
     m_k2 = 0.;
-    frameSize = 0.1;
+    frameSize = 0.05;
     m_timeStamp = 0;
 }
 void Frame::addObservation(Observation obs)
@@ -29,29 +29,50 @@ void Frame::setDistortionFactors(const double k1, const double k2)
     m_k2 = (double) k2;
 }
 
-double* Frame::getMutable(RotationType rotType)
+void Frame::getMutable(double* param)
 {
-    m_mutableParam = new double[10];
-    if(rotType == RotationType::Quaternion)
-    {
-        Eigen::Matrix3d rot;
-        rot << m_Tcw(0,0),m_Tcw(0,1),m_Tcw(0,2),
-               m_Tcw(1,0),m_Tcw(1,1),m_Tcw(1,2),
-               m_Tcw(2,0),m_Tcw(2,1),m_Tcw(2,2);
-        Eigen::Quaterniond q(rot);
-        m_mutableParam[0] = q.w();
-        m_mutableParam[1] = q.x();
-        m_mutableParam[2] = q.y();
-        m_mutableParam[3] = q.z();
+    *(param + 0) = m_angleAxis.angle()*m_angleAxis.axis()[0];
+    *(param + 1) = m_angleAxis.angle()*m_angleAxis.axis()[1];
+    *(param + 2) = m_angleAxis.angle()*m_angleAxis.axis()[2];
+    *(param + 3) = m_translation[0];
+    *(param + 4) = m_translation[1];
+    *(param + 5) = m_translation[2];
+    *(param + 6) = m_f; //focal length
+    *(param + 7) = m_k1; //first order distortion
+    *(param + 8) = m_k2; //second order distortion
+}
 
-        m_mutableParam[4] = m_Tcw(3,0);
-        m_mutableParam[5] = m_Tcw(3,1);
-        m_mutableParam[6] = m_Tcw(3,2);
+double* Frame::getMutable()
+{
+    m_mutableParam = new double[9];
 
-        m_mutableParam[7] = m_f; //focal length
-        m_mutableParam[8] = m_k1; //first order distortion
-        m_mutableParam[9] = m_k2; //second order distortion
-    }
+    m_mutableParam[0] = m_angleAxis.angle()*m_angleAxis.axis()[0];
+    m_mutableParam[1] = m_angleAxis.angle()*m_angleAxis.axis()[1];
+    m_mutableParam[2] = m_angleAxis.angle()*m_angleAxis.axis()[2];
+
+    m_mutableParam[3] = m_translation[0];
+    m_mutableParam[4] = m_translation[1];
+    m_mutableParam[5] = m_translation[2];
+
+    m_mutableParam[6] = m_f; //focal length
+    m_mutableParam[7] = m_k1; //first order distortion
+    m_mutableParam[8] = m_k2; //second order distortion
     return m_mutableParam;
 }
 
+
+const Frame::Pose Frame::getConstTwc()
+{
+    Pose Twc;
+    Eigen::Matrix3d R;
+    Eigen::Vector3d t;
+    R = m_angleAxis.inverse().toRotationMatrix();
+    t = R*m_translation;
+    t*=-1;
+    Twc.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
+                            R(1,0),R(1,1),R(1,2),
+                            R(2,0),R(2,1),R(2,2);
+    Twc.topRightCorner(3,1)<<t[0],t[1],t[2];
+    Twc(3,3) = 1;
+    return Twc;
+}

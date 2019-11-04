@@ -8,11 +8,7 @@
 int main(int argc, char** argv)
 {
     printf("test\n");
-    BALProblem bal_problem("problem-73-11032-pre.txt", false);
-//    bal_problem.Perturb(0.0,
-//                        0.0,
-//                        0.0);
-//    bal_problem.Normalize();
+    BALProblem bal_problem("../files/problem-73-11032-pre.txt", false);
     bal_problem.generateCameras();
     bal_problem.generateObeservations();
     bal_problem.generatePoints();
@@ -23,7 +19,7 @@ int main(int argc, char** argv)
     reader.readFrames(&graph,"../files/cameras","../files/observations");
     reader.readPoints(&graph,"../files/points");
     BundleAdjuster BA;
-//    BA.solve(&graph);
+    BA.solve(&graph);
     viewer.setFrames(graph.getConstFrames());
     viewer.setPoints(graph.getConstPoints());
     viewer.visualize();

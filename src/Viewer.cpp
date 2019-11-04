@@ -48,8 +48,8 @@ void Viewer::visualize()
             if(i>0)
             {
                 Eigen::Vector3f last,curr;
-                last = m_frames[i-1].getConstPose().topRightCorner(3,1);
-                curr = m_frames[i].getConstPose().topRightCorner(3,1);
+                last = m_frames[i-1].getConstTwc().topRightCorner(3,1);
+                curr = m_frames[i].getConstTwc().topRightCorner(3,1);
                 glLineWidth(1);
                 glColor3f(0.0f,1.0f,0.0f);
                 glBegin(GL_LINES);
@@ -85,9 +85,12 @@ void Viewer::drawFrame(Frame frame)
 {
     glPushMatrix();
 
-    Frame::Pose Tcw ;//= Eigen::Matrix4d::Identity();
-    Tcw = frame.getConstPose();
-    GLfloat *m = Tcw.data();
+//    Frame::Pose Tcw ;//= Eigen::Matrix4d::Identity();
+    Frame::Pose Twc;
+//    Tcw = frame.getConstPose();
+    Twc = frame.getConstTwc();
+    GLfloat *m = Twc.data();
+//    GLfloat *m = Tcw.data();
     glMultMatrixf(m);
 
     float w,h,z;

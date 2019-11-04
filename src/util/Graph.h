@@ -7,6 +7,7 @@ class Graph
 {
 public:
     Graph();
+    void getOptParameters(double *param);
     void addFrame(const Frame frame);
     void addPoint(const Point point);
     void setFrames(FramePtrVector framePtrs);

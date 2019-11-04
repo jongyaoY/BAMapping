@@ -11,7 +11,7 @@ BundleAdjuster::BundleAdjuster()
 
 void BundleAdjuster::SetLinearSolver(Solver::Options* options)
 {
-  options->linear_solver_type = LinearSolverType::SPARSE_SCHUR;
+  options->linear_solver_type = LinearSolverType::DENSE_SCHUR;
   options->preconditioner_type = PreconditionerType::JACOBI;
   options->visibility_clustering_type = VisibilityClusteringType::CANONICAL_VIEWS;
   options->sparse_linear_algebra_library_type = SparseLinearAlgebraLibraryType::SUITE_SPARSE;
@@ -40,7 +40,7 @@ void BundleAdjuster::SetSolverOptions(Graph *graph, Solver::Options* options)
 {
   SetMinimizerOptions(options);
   SetLinearSolver(options);
-  SetOrdering(graph, options);
+//  SetOrdering(graph, options);
 }
 
 void BundleAdjuster::SetOrdering(Graph *graph, Solver::Options* options)
@@ -70,21 +70,26 @@ void BundleAdjuster::BuildProblem(Graph *graph,Problem* problem)
     FramePtrVector pFrames = graph->getFrames();
     PointPtrMap pPoints = graph->getPoints();
     FramePtrVector::iterator pFrameIt = pFrames.begin();
-    PointPtrMap::iterator pPointIt = pPoints.begin();
-    for(; pFrameIt!=pFrames.end(); pFrameIt++)
+    int camera_size = 9*pFrames.size();
+    int point_size = 3*pPoints.size();
+    int param_size = 9*pFrames.size()+3*pPoints.size();
+    parameters = new double[param_size];
+    double *param = new double[param_size];
+    graph->getOptParameters(param);
+    double* cam = parameters;
+    double* point = parameters + camera_size;
+    for(int i = 0; i < pFrames.size(); i++)
     {
+        Frame::ObservationVector observations = pFrames[i]->getObservations();
 
-        Frame::ObservationVector observations = (*pFrameIt)->getObservations();
-        Frame::ObservationVector::const_iterator obsIt = observations.begin();
-        for(;obsIt != observations.end(); obsIt++)
+        for(int j = 0; j < observations.size(); j++)
         {
-
             CostFunction* cost_function;
-            cost_function = Error::Create(obsIt->second[0], obsIt->second[1]);
+            cost_function = Error::Create(observations[j].second[0], observations[j].second[1]);
             LossFunction* loss_function = new HuberLoss(1.0);
-
-            problem->AddResidualBlock(cost_function, loss_function, (*pFrameIt)->getMutable(), pPoints[obsIt->first]->getMutable());
-
+//            double camera[9] = pFrames[i]->getMutable();
+//            double point[3] = pPoints[observations[j].first]->getMutable();
+            problem->AddResidualBlock(cost_function, loss_function, cam+i, point+observations[j].first);
         }
     }
 }
@@ -94,10 +99,14 @@ void BundleAdjuster::solve(Graph *graph)
     Problem problem;
     Solver::Options options;
     BuildProblem(graph,&problem);
-    SetSolverOptions(graph,&options);
-    options.gradient_tolerance = 1e-16;
-    options.function_tolerance = 1e-16;
+//    SetSolverOptions(graph,&options);
+    options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.minimizer_progress_to_stdout = true;
+//    options.gradient_tolerance = 1e-16;
+//    options.function_tolerance = 1e-16;
     Solver::Summary summary;
     Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";
 }
+
+double* BundleAdjuster::parameters;
