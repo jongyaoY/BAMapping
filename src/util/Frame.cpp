@@ -5,7 +5,7 @@ Frame::Frame()
     m_Tcw = Pose::Identity();
     m_k1 = 0.;
     m_k2 = 0.;
-    frameSize = 0.01;
+    frameSize = 0.1;
     m_timeStamp = 0;
 }
 void Frame::addObservation(Observation obs)

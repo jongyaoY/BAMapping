@@ -38,3 +38,25 @@ void Graph::setPoints(PointPtrMap pointPtrs)
     }
 }
 
+const FrameVector Graph::getConstFrames()
+{
+    FrameVector frameVec;
+    for(auto pFrame : m_framePtrs)
+    {
+        Frame frame = *pFrame;
+        frameVec.push_back(frame);
+    }
+    return frameVec;
+}
+
+const PointVector Graph::getConstPoints()
+{
+    PointVector pointVec;
+    for(auto idpPoint : m_pointPtrs)
+    {
+        Point point;
+        point = *idpPoint.second;
+        pointVec.push_back(point);
+    }
+    return pointVec;
+}

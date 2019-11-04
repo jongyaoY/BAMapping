@@ -42,7 +42,7 @@ void Viewer::visualize()
         // Clear screen and activate view to render into
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
-        for(int i = 0;m_frames.size(); i++)
+        for(int i = 0; i < m_frames.size(); i++)
         {
             drawFrame(m_frames[i]);
             if(i>0)
@@ -71,12 +71,13 @@ void Viewer::visualize()
 
 }
 
-void Viewer::drawPoint(const Point point)
+void Viewer::drawPoint(Point point)
 {
+    Point::Pose p = point.getConstPose();
     glPointSize(10*point.pointSize); //cm
     glBegin(GL_POINTS);
     glColor3f(point.color[0],point.color[1],point.color[2]);
-    glVertex3f(point.pose[0],point.pose[1],point.pose[2]);
+    glVertex3f(p[0],p[1],p[2]);
     glEnd();
 }
 
@@ -84,7 +85,7 @@ void Viewer::drawFrame(Frame frame)
 {
     glPushMatrix();
 
-    Frame::Pose Tcw;
+    Frame::Pose Tcw ;//= Eigen::Matrix4d::Identity();
     Tcw = frame.getConstPose();
     GLfloat *m = Tcw.data();
     glMultMatrixf(m);

@@ -14,12 +14,12 @@ set (CMAKE_CXX_STANDARD 11)
 #  suitesparse
 #  ufsparse
 #)
-include_directories(${CHOLMOD_INCLUDE_DIR})
-find_library(CHOLMOD_LIBRARY
-    NAMES cholmod libcholmod
-    PATHS $ENV{CHOLMODDIR} ${LIB_INSTALL_DIR})
+#include_directories(${CHOLMOD_INCLUDE_DIR})
+#find_library(CHOLMOD_LIBRARY
+#    NAMES cholmod libcholmod
+#    PATHS $ENV{CHOLMODDIR} ${LIB_INSTALL_DIR})
 
-set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY})
+#set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY})
 
 
 find_package(Ceres REQUIRED)

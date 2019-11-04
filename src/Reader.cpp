@@ -1,4 +1,5 @@
 #include "Reader.h"
+#include "ceres/rotation.h"
 
 Reader::Reader()
 {
@@ -17,14 +18,30 @@ bool Reader::readFrames(Graph* pGraph,const char* cam_file,const char* obs_file)
         Frame frame;
         double t;
         double x,y,z,qx,qy,qz,qw;
+        double a[3];
         double f,k1,k2;
-        int num_scanned = fscanf(pF_cam,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&qx,&qy,&qz,&qw,&x,&y,&z,&f,&k1,&k2);
-        if(num_scanned != 10)
+//        int num_scanned = fscanf(pF_cam,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&qw,&qx,&qy,&qz,&x,&y,&z,&f,&k1,&k2);
+        int num_scanned = fscanf(pF_cam,"%lf %lf %lf %lf %lf %lf %lf %lf %lf",&a[0],&a[1],&a[2],&x,&y,&z,&f,&k1,&k2);
+        if(num_scanned != 9)
             break;
-        Eigen::Quaternionf q(qw,qx,qy,qz);
+        double norm = sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
+        Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(a[0]/norm,a[1]/norm,a[2]/norm));
+//        Eigen::Quaternionf q(qw,qx,qy,qz);
         Frame::Pose Tcw;
-        Tcw.topLeftCorner(3,3) = q.toRotationMatrix();
+        double r[9];
+//        ceres::AngleAxisToRotationMatrix(a,r);
+        Eigen::Matrix<double, 3, 3, Eigen::RowMajor> R;
+
+//        Tcw.topLeftCorner(3,3) = q.toRotationMatrix();
+//        Tcw.topRightCorner(3,1) << x,y,z;
+        R = axisAngle.toRotationMatrix();
+//        R = q.toRotationMatrix();
+        Eigen::Matrix3d I = R.transpose()*R;
+        Tcw.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
+                                R(1,0),R(1,1),R(1,2),
+                                R(2,0),R(2,1),R(2,2);
         Tcw.topRightCorner(3,1) << x,y,z;
+        Tcw(3,3) = 1;
         frame.setPose(Tcw);
         //just for test
         //assume fx = fy = f,cx=cy=0
