@@ -62,26 +62,41 @@ const PointVector Graph::getConstPoints()
 }
 
 
-void Graph::getOptParameters(double *param)
+void Graph::getOptParameters(double *cam_param, double *point_param)
 {
     int cam_size = 9*m_framePtrs.size();
     int point_size = 3*m_pointPtrs.size();
 
-    double* cam = param;
-    double* point = param + cam_size;
+    double* cam;
+    double* point;
     for(int cam_id = 0; cam_id < m_framePtrs.size(); cam_id++)
     {
-        cam += 9*cam_id;
+        cam = cam_param + 9*cam_id;
         m_framePtrs[cam_id]->getMutable(cam);
     }
     for(int point_id = 0; point_id < m_pointPtrs.size(); point_id++)
     {
-        point += 3*point_id;
-//        double *p = new double[3];
+        point = point_param + 3*point_id;
         m_pointPtrs[point_id]->getMutable(point);
+    }
 
-//        memcpy(point, p ,3*sizeof(double));
-//        delete[] p;
+}
+
+void Graph::update(double *cam_param,double* point_param)
+{
+    for(int i = 0; i < m_framePtrs.size(); i++)
+    {
+        double* cam = cam_param + 9*i;
+        double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
+        Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
+
+        m_framePtrs[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+    }
+
+    for(int i = 0; i < m_pointPtrs.size(); i++)
+    {
+        double* point = point_param + 3*i;
+        m_pointPtrs[i]->setPoint(point[0],point[1],point[2]);
     }
 
 }

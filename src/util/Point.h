@@ -5,22 +5,22 @@
 class Point
 {
 public:
-    typedef Eigen::Vector3f Pose;
+    typedef Eigen::Vector3f Position;
     typedef Eigen::Vector3i Color;
 
     Point();
     Point(double x, double y, double z);
     ~Point();
-    inline double* getMutable() { return m_p; }
+    void setPoint(double x, double y, double z);
     void getMutable(double* param);
-    const Pose getConstPose();
+    const Position getConstPoint();
 
     //for viewer
     float pointSize; //in meter
-    Pose pose;
+    Position pose;
     Color color;
 private:
-    double *m_p;
+    Position m_point;
 
 };
 

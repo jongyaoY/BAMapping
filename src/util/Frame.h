@@ -13,26 +13,22 @@ public:
     typedef std::vector<Observation> ObservationVector;
 
     Frame();
-//    Frame(Frame frame);
-//    Frame(Pose Tcw):m_Tcw(Tcw){}
+
     void addObservation(Observation obs);
-    inline void setPose(Pose Tcw)
-    {
-//        m_Tcw = Tcw;
-    }
-    inline void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point){m_angleAxis = angleAxis;m_translation = point;}
+    inline void setPose(Pose Tcw);
+    void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
+
     template<typename T>
     void setIntrinsics(const T fx, const T fy, const T cx, const T cy);
     template<typename T>
     void setDistortionFactors(const T k1, const T k2);
 
-    double* getMutable();
     void getMutable(double* param);
     const ObservationVector getObservations()const {return m_Observations;}
     const unsigned int getObservationSize()const {return m_Observations.size();}
-//    inline const Pose getConstPose(){return m_Tcw;}
-    const Pose getConstTwc();
 
+    const Pose getConstTwc();
+    const Pose getConstTcw();
 
     float frameSize; //in meter
 private:

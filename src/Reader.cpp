@@ -25,14 +25,14 @@ bool Reader::readFrames(Graph* pGraph,const char* cam_file,const char* obs_file)
             break;
         double norm = sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
         Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(a[0]/norm,a[1]/norm,a[2]/norm));
-        Frame::Pose Tcw;
-        Eigen::Matrix3d R;
-        R = axisAngle.toRotationMatrix();
-        Tcw.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
-                                R(1,0),R(1,1),R(1,2),
-                                R(2,0),R(2,1),R(2,2);
-        Tcw.topRightCorner(3,1) << x,y,z;
-        Tcw(3,3) = 1;
+//        Frame::Pose Tcw;
+//        Eigen::Matrix3d R;
+//        R = axisAngle.toRotationMatrix();
+//        Tcw.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
+//                                R(1,0),R(1,1),R(1,2),
+//                                R(2,0),R(2,1),R(2,2);
+//        Tcw.topRightCorner(3,1) << x,y,z;
+//        Tcw(3,3) = 1;
 
         frame.setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(x,y,z));
         //just for test

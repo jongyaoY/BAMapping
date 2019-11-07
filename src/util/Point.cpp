@@ -1,35 +1,33 @@
 #include "Point.h"
 
-Point::Point():color(1,0,0)
+Point::Point():color(1,0,0),pointSize(0.005),m_point(0,0,0)
 {
-    pointSize = 0.005;
-    m_p = new double[3];
 }
 
-Point::Point(double x, double y, double z):color(1,0,0)
+Point::Point(double x, double y, double z):color(1,0,0),
+                                           pointSize(0.005),
+                                           m_point(x,y,z)
 {
-    pointSize = 0.005;
-    m_p = new double[3];
-    m_p[0] = x;
-    m_p[1] = y;
-    m_p[2] = z;
 }
 Point::~Point()
 {
-//    if(m_p != NULL)
-//        delete[] m_p;
+
 }
 
 
-const Point::Pose Point::getConstPose()
+const Point::Position Point::getConstPoint()
 {
-    Pose p(m_p[0],m_p[1],m_p[2]);
-    return p;
+    return m_point;
 }
 
 void Point::getMutable(double* param)
 {
-    *(param+0) = m_p[0];
-    *(param+1) = m_p[1];
-    *(param+2) = m_p[2];
+    *(param + 0) = m_point[0];
+    *(param + 1) = m_point[1];
+    *(param + 2) = m_point[2];
+}
+
+void Point::setPoint(double x, double y, double z)
+{
+    m_point = Position(x,y,z);
 }

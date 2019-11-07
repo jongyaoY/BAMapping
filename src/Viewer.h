@@ -12,13 +12,16 @@ class Viewer
 public:
     Viewer();
     void visualize();
+    inline void setRefPoints(PointVector points){m_refPoints = points;}
     inline void setPoints(PointVector points){m_points = points;}
     inline void setFrames(FrameVector frames){m_frames = frames;}
 private:
     void drawPoint(const Point point);
+    void drawRefPoint(const Point point);
     void drawFrame(const Frame frame);
 
     PointVector m_points;
+    PointVector m_refPoints;
     FrameVector m_frames;
 };
 

@@ -1,4 +1,5 @@
 build/
 debug/
+dataset_local/
 CMakeLists.txt.user
 CMakeLists.txt.user.31e1583

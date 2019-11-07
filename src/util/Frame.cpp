@@ -2,11 +2,19 @@
 
 Frame::Frame()
 {
-//    m_Tcw = Pose::Identity();
     m_k1 = 0.;
     m_k2 = 0.;
     frameSize = 0.05;
     m_timeStamp = 0;
+}
+void Frame::setPose(Pose pose)
+{
+
+}
+
+void Frame::setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point)
+{
+    m_angleAxis = angleAxis;m_translation = point;
 }
 void Frame::addObservation(Observation obs)
 {
@@ -42,24 +50,6 @@ void Frame::getMutable(double* param)
     *(param + 8) = m_k2; //second order distortion
 }
 
-double* Frame::getMutable()
-{
-    m_mutableParam = new double[9];
-
-    m_mutableParam[0] = m_angleAxis.angle()*m_angleAxis.axis()[0];
-    m_mutableParam[1] = m_angleAxis.angle()*m_angleAxis.axis()[1];
-    m_mutableParam[2] = m_angleAxis.angle()*m_angleAxis.axis()[2];
-
-    m_mutableParam[3] = m_translation[0];
-    m_mutableParam[4] = m_translation[1];
-    m_mutableParam[5] = m_translation[2];
-
-    m_mutableParam[6] = m_f; //focal length
-    m_mutableParam[7] = m_k1; //first order distortion
-    m_mutableParam[8] = m_k2; //second order distortion
-    return m_mutableParam;
-}
-
 
 const Frame::Pose Frame::getConstTwc()
 {
@@ -75,4 +65,21 @@ const Frame::Pose Frame::getConstTwc()
     Twc.topRightCorner(3,1)<<t[0],t[1],t[2];
     Twc(3,3) = 1;
     return Twc;
+}
+
+const Frame::Pose Frame::getConstTcw()
+{
+    Pose Tcw;
+    Eigen::Matrix3d R;
+    Eigen::Vector3d t;
+
+    R = m_angleAxis.toRotationMatrix();
+    t = m_translation;
+
+    Tcw.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
+                            R(1,0),R(1,1),R(1,2),
+                            R(2,0),R(2,1),R(2,2);
+    Tcw.topRightCorner(3,1)<<t[0],t[1],t[2];
+    Tcw(3,3) = 1;
+    return Tcw;
 }

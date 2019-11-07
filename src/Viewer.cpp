@@ -47,22 +47,27 @@ void Viewer::visualize()
             drawFrame(m_frames[i]);
             if(i>0)
             {
-                Eigen::Vector3f last,curr;
-                last = m_frames[i-1].getConstTwc().topRightCorner(3,1);
-                curr = m_frames[i].getConstTwc().topRightCorner(3,1);
-                glLineWidth(1);
-                glColor3f(0.0f,1.0f,0.0f);
-                glBegin(GL_LINES);
-                glVertex3f(last[0],last[1],last[2]);
-                glVertex3f(curr[0],curr[1],curr[2]);
-                glEnd();
+//                Eigen::Vector3f last,curr;
+//                last = m_frames[i-1].getConstTwc().topRightCorner(3,1);
+//                curr = m_frames[i].getConstTwc().topRightCorner(3,1);
+//                glLineWidth(1);
+//                glColor3f(0.0f,1.0f,0.0f);
+//                glBegin(GL_LINES);
+//                glVertex3f(last[0],last[1],last[2]);
+//                glVertex3f(curr[0],curr[1],curr[2]);
+//                glEnd();
             }
 
         }
 //        pangolin::glDrawColouredCube();
+
         for(auto point : m_points)
         {
             drawPoint(point);
+        }
+        for(auto point : m_refPoints)
+        {
+            drawRefPoint(point);
         }
         // Swap frames and Process Events
         pangolin::FinishFrame();
@@ -70,10 +75,21 @@ void Viewer::visualize()
 
 
 }
+void Viewer::drawRefPoint(Point point)
+{
+    Point p(point);
+    p.color<<0,0,1;
+    Point::Position pos = p.getConstPoint();
+    glPointSize(500*p.pointSize); //cm
+    glBegin(GL_POINTS);
+    glColor3f(p.color[0],p.color[1],p.color[2]);
+    glVertex3f(pos[0],pos[1],pos[2]);
+    glEnd();
+}
 
 void Viewer::drawPoint(Point point)
 {
-    Point::Pose p = point.getConstPose();
+    Point::Position p = point.getConstPoint();
     glPointSize(10*point.pointSize); //cm
     glBegin(GL_POINTS);
     glColor3f(point.color[0],point.color[1],point.color[2]);
@@ -89,6 +105,7 @@ void Viewer::drawFrame(Frame frame)
     Frame::Pose Twc;
 //    Tcw = frame.getConstPose();
     Twc = frame.getConstTwc();
+//    Twc = frame.getConstTcw();
     GLfloat *m = Twc.data();
 //    GLfloat *m = Tcw.data();
     glMultMatrixf(m);

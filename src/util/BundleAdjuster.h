@@ -27,7 +27,9 @@ public:
     static void BuildProblem(Graph *graph,Problem* problem);
     static void solve(Graph *graph);
 
-    static double* parameters;
+//    static double* parameters;
+    static double* cam_param;
+    static double* point_param;
 
 };
 
@@ -44,9 +46,8 @@ struct Error
   {
       T p[3];
       ceres::AngleAxisRotatePoint(camera, point, p);
-//      QuaternionRotatePoint(camera, point, p);
 
-      // camera[4,5,6] are the translation.
+      // camera[3,4,5] are the translation.
       p[0] += camera[3];
       p[1] += camera[4];
       p[2] += camera[5];
@@ -54,20 +55,19 @@ struct Error
       // Compute the center of distortion. The sign change comes from
       // the camera model that Noah Snavely's Bundler assumes, whereby
       // the camera coordinate system has a negative z axis.
-      const T xp = - p[0] / p[2];
-      const T yp = - p[1] / p[2];
+      T xp = - p[0] / p[2];
+      T yp = - p[1] / p[2];
 
       // Apply second and fourth order radial distortion.
       const T& l1 = camera[7];
       const T& l2 = camera[8];
-      const T r2 = xp*xp + yp*yp;
-      const T distortion = 1.0 + r2  * (l1 + l2  * r2);
-
+      T r2 = xp*xp + yp*yp;
+      T distortion = 1.0 + r2  * (l1 + l2  * r2);
 
       // Compute final projected point position.
       const T& focal = camera[6];
-      const T predicted_x = focal * distortion * xp;
-      const T predicted_y = focal * distortion * yp;
+      T predicted_x = focal * distortion * xp;
+      T predicted_y = focal * distortion * yp;
 
       // The error is the difference between the predicted and observed position.
       residuals[0] = predicted_x - observed_x;
