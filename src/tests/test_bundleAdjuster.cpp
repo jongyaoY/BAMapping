@@ -8,7 +8,7 @@
 int main(int argc, char** argv)
 {
     google::InitGoogleLogging(argv[0]);
-    BALProblem bal_problem("../files/problem-21-11315-pre.txt", false);
+    BALProblem bal_problem("../dataset_local/problem-356-226730-pre.txt", false);
     bal_problem.generateCameras();
     bal_problem.generateObeservations();
     bal_problem.generatePoints();

@@ -29,15 +29,11 @@ public:
 
     const Pose getConstTwc();
     const Pose getConstTcw();
-
-    float frameSize; //in meter
 private:
-    //for viewer
     double m_timeStamp;
     //for optimization
     Eigen::AngleAxisd m_angleAxis;
     Eigen::Vector3d m_translation;
-    double *m_mutableParam;
     //intrisic parameters
     double m_f;   //focal length
     double m_fx;

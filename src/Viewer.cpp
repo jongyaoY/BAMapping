@@ -2,7 +2,21 @@
 #include <math.h>
 Viewer::Viewer()
 {
+    mKeyFrameSize = 0.05;
+    mKeyFrameLineWidth = 1;
+    mPointSize = 1;
 
+    mFrameColor[0] = 0.;
+    mFrameColor[1] = 0.;
+    mFrameColor[2] = 1.;
+
+    mPointColor[0] = 1.;
+    mPointColor[1] = 0.;
+    mPointColor[2] = 0.;
+
+    mRefPointColor[0] = 0.;
+    mRefPointColor[1] = 0.;
+    mRefPointColor[2] = 1.;
 }
 void Viewer::visualize()
 {
@@ -16,11 +30,11 @@ void Viewer::visualize()
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     pangolin::CreatePanel("menu").SetBounds(0.0,1.0,0.0,pangolin::Attach::Pix(175));
-    pangolin::Var<bool> menuFollowCamera("menu.Follow Camera",true,true);
-    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
-    pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
+    pangolin::Var<bool> menuShowConnect("menu.Show Connect",true,true);
+    pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
+    pangolin::Var<bool> menuShowRefPoints("menu.Show RefPoints",true,true);
+//    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
@@ -42,57 +56,62 @@ void Viewer::visualize()
         // Clear screen and activate view to render into
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         d_cam.Activate(s_cam);
-        for(int i = 0; i < m_frames.size(); i++)
+        if(menuShowKeyFrames)
         {
-            drawFrame(m_frames[i]);
-            if(i>0)
+            for(int i = 0; i < m_frames.size(); i++)
             {
-//                Eigen::Vector3f last,curr;
-//                last = m_frames[i-1].getConstTwc().topRightCorner(3,1);
-//                curr = m_frames[i].getConstTwc().topRightCorner(3,1);
-//                glLineWidth(1);
-//                glColor3f(0.0f,1.0f,0.0f);
-//                glBegin(GL_LINES);
-//                glVertex3f(last[0],last[1],last[2]);
-//                glVertex3f(curr[0],curr[1],curr[2]);
-//                glEnd();
+                drawFrame(m_frames[i]);
+                if(i>0 && menuShowConnect)
+                {
+                    Eigen::Vector3f last,curr;
+                    last = m_frames[i-1].getConstTwc().topRightCorner(3,1);
+                    curr = m_frames[i].getConstTwc().topRightCorner(3,1);
+                    glLineWidth(1);
+                    glColor3f(0.0f,1.0f,0.0f);
+                    glBegin(GL_LINES);
+                    glVertex3f(last[0],last[1],last[2]);
+                    glVertex3f(curr[0],curr[1],curr[2]);
+                    glEnd();
+                }
+
             }
-
         }
-//        pangolin::glDrawColouredCube();
-
-        for(auto point : m_points)
+        if(menuShowPoints)
         {
-            drawPoint(point);
+            for(auto point : m_points)
+            {
+                drawPoint(point,mPointColor);
+            }
         }
-        for(auto point : m_refPoints)
+        if(menuShowRefPoints)
         {
-            drawRefPoint(point);
+            for(auto point : m_refPoints)
+            {
+                drawPoint(point,mRefPointColor);
+            }
         }
+
         // Swap frames and Process Events
         pangolin::FinishFrame();
+        if(menuReset)
+        {
+            menuShowKeyFrames = true;
+            menuShowConnect = true;
+            menuShowPoints = true;
+            menuShowRefPoints = true;
+
+        }
     }
 
 
 }
-void Viewer::drawRefPoint(Point point)
-{
-    Point p(point);
-    p.color<<0,0,1;
-    Point::Position pos = p.getConstPoint();
-    glPointSize(500*p.pointSize); //cm
-    glBegin(GL_POINTS);
-    glColor3f(p.color[0],p.color[1],p.color[2]);
-    glVertex3f(pos[0],pos[1],pos[2]);
-    glEnd();
-}
 
-void Viewer::drawPoint(Point point)
+void Viewer::drawPoint(Point point, GLfloat *color)
 {
     Point::Position p = point.getConstPoint();
-    glPointSize(10*point.pointSize); //cm
+    glPointSize(mPointSize); //cm
     glBegin(GL_POINTS);
-    glColor3f(point.color[0],point.color[1],point.color[2]);
+    glColor3f(color[0],color[1],color[2]);
     glVertex3f(p[0],p[1],p[2]);
     glEnd();
 }
@@ -100,22 +119,22 @@ void Viewer::drawPoint(Point point)
 void Viewer::drawFrame(Frame frame)
 {
     glPushMatrix();
-
-//    Frame::Pose Tcw ;//= Eigen::Matrix4d::Identity();
     Frame::Pose Twc;
-//    Tcw = frame.getConstPose();
     Twc = frame.getConstTwc();
 //    Twc = frame.getConstTcw();
-    GLfloat *m = Twc.data();
-//    GLfloat *m = Tcw.data();
+    GLfloat *m = (GLfloat*) Twc.data();
+//    GLfloat m[16] = {Twc(0,0),Twc(0,1),Twc(0,2),Twc(0,3),
+//                     Twc(1,0),Twc(1,1),Twc(1,2),Twc(1,3),
+//                     Twc(2,0),Twc(2,1),Twc(2,2),Twc(2,3),
+//                     0,       0,       0,       1};
     glMultMatrixf(m);
 
     float w,h,z;
-    w = frame.frameSize; //in meter
+    w = mKeyFrameSize; //in meter
     h = 0.6*w;
     z = 0.5*w;
-    glLineWidth(1);
-    glColor3f(0.0f,0.0f,1.0f);
+    glLineWidth(mKeyFrameLineWidth);
+    glColor3f(mFrameColor[0],mFrameColor[1],mFrameColor[2]);
     glBegin(GL_LINES);
     glVertex3f(0,0,0);
     glVertex3f(w,h,z);

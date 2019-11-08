@@ -1,12 +1,10 @@
 #include "Point.h"
 
-Point::Point():color(1,0,0),pointSize(0.005),m_point(0,0,0)
+Point::Point():m_point(0,0,0)
 {
 }
 
-Point::Point(double x, double y, double z):color(1,0,0),
-                                           pointSize(0.005),
-                                           m_point(x,y,z)
+Point::Point(double x, double y, double z): m_point(x,y,z)
 {
 }
 Point::~Point()

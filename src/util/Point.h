@@ -15,10 +15,6 @@ public:
     void getMutable(double* param);
     const Position getConstPoint();
 
-    //for viewer
-    float pointSize; //in meter
-    Position pose;
-    Color color;
 private:
     Position m_point;
 

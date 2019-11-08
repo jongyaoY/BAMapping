@@ -4,7 +4,6 @@ Frame::Frame()
 {
     m_k1 = 0.;
     m_k2 = 0.;
-    frameSize = 0.05;
     m_timeStamp = 0;
 }
 void Frame::setPose(Pose pose)

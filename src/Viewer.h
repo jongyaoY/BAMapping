@@ -16,13 +16,19 @@ public:
     inline void setPoints(PointVector points){m_points = points;}
     inline void setFrames(FrameVector frames){m_frames = frames;}
 private:
-    void drawPoint(const Point point);
-    void drawRefPoint(const Point point);
+    void drawPoint(const Point point, GLfloat* color);
     void drawFrame(const Frame frame);
 
     PointVector m_points;
     PointVector m_refPoints;
     FrameVector m_frames;
+
+    float mKeyFrameSize;
+    float mKeyFrameLineWidth;
+    float mPointSize;
+    GLfloat mFrameColor[3];
+    GLfloat mPointColor[3];
+    GLfloat mRefPointColor[3];
 };
 
 #endif // VIEWER_H
