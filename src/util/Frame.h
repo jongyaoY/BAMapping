@@ -29,6 +29,8 @@ public:
 
     const Pose getConstTwc();
     const Pose getConstTcw();
+    const Eigen::AngleAxisd getConstAngleAxis();
+    const Eigen::Vector3d getConstTranslation();
 private:
     double m_timeStamp;
     //for optimization

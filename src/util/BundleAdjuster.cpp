@@ -21,9 +21,9 @@ void BundleAdjuster::SetLinearSolver(Solver::Options* options)
 
 void BundleAdjuster::SetMinimizerOptions(Solver::Options* options)
 {
-  options->max_num_iterations = 50;
+  options->max_num_iterations = 200;
   options->minimizer_progress_to_stdout = true;
-  options->num_threads = 4;
+  options->num_threads = 6;
   options->eta = 1e-2;
   options->max_solver_time_in_seconds = 1e32;
   options->use_nonmonotonic_steps = false;

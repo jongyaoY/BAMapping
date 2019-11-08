@@ -67,7 +67,8 @@ add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp
                                     src/util/BundleAdjuster.cpp
                                     src/util/bal_problem.cpp
                                     src/Viewer.cpp
-                                    src/Reader.cpp)
+                                    src/Reader.cpp
+                                    src/Writer.cpp)
 target_link_libraries(test_bundleAdjuster ${PROJECT_NAME})
 
 

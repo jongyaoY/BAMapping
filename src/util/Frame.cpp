@@ -82,3 +82,13 @@ const Frame::Pose Frame::getConstTcw()
     Tcw(3,3) = 1;
     return Tcw;
 }
+
+const Eigen::AngleAxisd Frame::getConstAngleAxis()
+{
+    return m_angleAxis;
+}
+
+const Eigen::Vector3d Frame::getConstTranslation()
+{
+    return m_translation;
+}
