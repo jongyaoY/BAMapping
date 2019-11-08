@@ -3,6 +3,9 @@
 Graph::Graph()
 {
     m_numObs = 0;
+    mPointBlockSize = 3;
+    mFrameBlockSize = Frame::getParamBlockSize();
+
 }
 void Graph::addFrame(const Frame frame)
 {
@@ -79,7 +82,33 @@ void Graph::getOptParameters(double *cam_param, double *point_param)
         point = point_param + 3*point_id;
         m_pointPtrs[point_id]->getMutable(point);
     }
+}
+void Graph::getOptParameters(double** cam_param,double** point_param)
+{
+    int cam_size = m_framePtrs.size();
+    int point_size = m_pointPtrs.size();
 
+    double* cam;
+    double* point;
+    for(int cam_id = 0; cam_id < m_framePtrs.size(); cam_id++)
+    {
+        cam = cam_param[cam_id];
+        m_framePtrs[cam_id]->getMutable(cam);
+    }
+    for(int point_id = 0; point_id < m_pointPtrs.size(); point_id++)
+    {
+        point = point_param[point_id];
+        m_pointPtrs[point_id]->getMutable(point);
+    }
+}
+
+int Graph::getFrameBlockSize()
+{
+    return mFrameBlockSize;
+}
+int Graph::getPointBlockSize()
+{
+    return mPointBlockSize;
 }
 
 void Graph::update(double *cam_param,double* point_param)
@@ -99,4 +128,21 @@ void Graph::update(double *cam_param,double* point_param)
         m_pointPtrs[i]->setPoint(point[0],point[1],point[2]);
     }
 
+}
+void Graph::update(double** cam_param,double** point_param)
+{
+    for(int i = 0; i < m_framePtrs.size(); i++)
+    {
+        double* cam = cam_param[i];
+        double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
+        Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
+
+        m_framePtrs[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+    }
+
+    for(int i = 0; i < m_pointPtrs.size(); i++)
+    {
+        double* point = point_param[i];
+        m_pointPtrs[i]->setPoint(point[0],point[1],point[2]);
+    }
 }

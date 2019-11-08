@@ -38,17 +38,24 @@ void Frame::setDistortionFactors(const double k1, const double k2)
 
 void Frame::getMutable(double* param)
 {
-    *(param + 0) = m_angleAxis.angle()*m_angleAxis.axis()[0];
-    *(param + 1) = m_angleAxis.angle()*m_angleAxis.axis()[1];
-    *(param + 2) = m_angleAxis.angle()*m_angleAxis.axis()[2];
-    *(param + 3) = m_translation[0];
-    *(param + 4) = m_translation[1];
-    *(param + 5) = m_translation[2];
+    for(int i = 0; i < mRotationBlockSize; i++)
+    {
+        *(param + i) = m_angleAxis.angle()*m_angleAxis.axis()[i];
+    }
+    for(int i = 0; i < 3; i++)
+    {
+        *(param + i + mRotationBlockSize) = m_translation[i];
+    }
+//    *(param + 0) = m_angleAxis.angle()*m_angleAxis.axis()[0];
+//    *(param + 1) = m_angleAxis.angle()*m_angleAxis.axis()[1];
+//    *(param + 2) = m_angleAxis.angle()*m_angleAxis.axis()[2];
+//    *(param + 3) = m_translation[0];
+//    *(param + 4) = m_translation[1];
+//    *(param + 5) = m_translation[2];
     *(param + 6) = m_f; //focal length
     *(param + 7) = m_k1; //first order distortion
     *(param + 8) = m_k2; //second order distortion
 }
-
 
 const Frame::Pose Frame::getConstTwc()
 {
@@ -92,3 +99,12 @@ const Eigen::Vector3d Frame::getConstTranslation()
 {
     return m_translation;
 }
+
+int Frame::getParamBlockSize()
+{
+    return mParamBlockSize;
+}
+
+int Frame::mParamBlockSize = 9;
+int Frame::mRotationBlockSize = 3;
+int Frame::mIntrinsicsBlockSize = 3;

@@ -27,9 +27,8 @@ public:
     static void BuildProblem(Graph *graph,Problem* problem);
     static void solve(Graph *graph);
 
-//    static double* parameters;
-    static double* cam_param;
-    static double* point_param;
+    static double** cam_param;
+    static double** point_param;
 
 };
 

@@ -8,7 +8,13 @@ class Graph
 public:
     Graph();
     void getOptParameters(double *cam_param,double* point_param);
+    void getOptParameters(double** cam_param, double** point_param);
     void update(double *cam_param,double* point_param);
+    void update(double** cam_param,double** point_param);
+
+    int getFrameBlockSize();
+    int getPointBlockSize();
+
     void addFrame(const Frame frame);
     void addPoint(const Point point);
     void setFrames(FramePtrVector framePtrs);
@@ -18,12 +24,13 @@ public:
 
     const FrameVector getConstFrames();
     const PointVector getConstPoints();
-    int point_block_size;
-    int frame_block_size;
 private:
     FramePtrVector m_framePtrs;
     PointPtrMap m_pointPtrs;
     unsigned int m_numObs;
+
+    int mPointBlockSize;
+    int mFrameBlockSize;
 };
 
 #endif // GRAPH_H

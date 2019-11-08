@@ -52,7 +52,7 @@ void BundleAdjuster::SetOrdering(Graph *graph, Solver::Options* options)
     int point_size = graph->getPoints().size();
     for(int i = 0; i < point_size; i++)
     {
-        ordering->AddElementToGroup(point_param + 3 * i, 0);
+        ordering->AddElementToGroup(point_param[i], 0);
     }
     // the entire camera.
 
@@ -60,7 +60,7 @@ void BundleAdjuster::SetOrdering(Graph *graph, Solver::Options* options)
     int frame_size = graph->getFrames().size();
     for(int i = 0; i < frame_size; i++)
     {
-        ordering->AddElementToGroup(cam_param + 9 * i, 1);
+        ordering->AddElementToGroup(cam_param[i], 1);
     }
 
     options->linear_solver_ordering.reset(ordering);
@@ -71,11 +71,21 @@ void BundleAdjuster::BuildProblem(Graph *graph,Problem* problem)
     FramePtrVector pFrames = graph->getFrames();
     PointPtrMap pPoints = graph->getPoints();
 
-    int camera_size = 9*pFrames.size();
-    int point_size = 3*pPoints.size();
+    int camera_size = pFrames.size();
+    int point_size = pPoints.size();
+    int cameraBlock_size = graph->getFrameBlockSize();
+    int pointBlock_size = graph->getPointBlockSize();
 
-    cam_param = new double[camera_size];
-    point_param = new double[point_size];
+    cam_param = new double* [camera_size];
+    point_param = new double* [point_size];
+    for(int i = 0; i < camera_size; i++)
+    {
+        cam_param[i] = new double[cameraBlock_size];
+    }
+    for(int i = 0; i < point_size; i++)
+    {
+        point_param[i] = new double[cameraBlock_size];
+    }
     graph->getOptParameters(cam_param,point_param);
 
     for(int i = 0; i < pFrames.size(); i++)
@@ -87,7 +97,7 @@ void BundleAdjuster::BuildProblem(Graph *graph,Problem* problem)
             CostFunction* cost_function;
             cost_function = Error::Create(observations[j].second[0], observations[j].second[1]);
             LossFunction* loss_function = new HuberLoss(1.0);
-            problem->AddResidualBlock(cost_function, NULL, cam_param + 9*i, point_param+3*observations[j].first);
+            problem->AddResidualBlock(cost_function, NULL, cam_param[i], point_param[observations[j].first]);
         }
     }
 }
@@ -108,6 +118,5 @@ void BundleAdjuster::solve(Graph *graph)
     graph->update(cam_param,point_param);
 }
 
-//double* BundleAdjuster::parameters;
-double* BundleAdjuster::cam_param;
-double* BundleAdjuster::point_param;
+double** BundleAdjuster::cam_param;
+double** BundleAdjuster::point_param;

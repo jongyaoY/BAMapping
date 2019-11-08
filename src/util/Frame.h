@@ -26,7 +26,7 @@ public:
     void getMutable(double* param);
     const ObservationVector getObservations()const {return m_Observations;}
     const unsigned int getObservationSize()const {return m_Observations.size();}
-
+    static int getParamBlockSize();
     const Pose getConstTwc();
     const Pose getConstTcw();
     const Eigen::AngleAxisd getConstAngleAxis();
@@ -36,6 +36,9 @@ private:
     //for optimization
     Eigen::AngleAxisd m_angleAxis;
     Eigen::Vector3d m_translation;
+    static int mParamBlockSize;
+    static int mRotationBlockSize;
+    static int mIntrinsicsBlockSize;
     //intrisic parameters
     double m_f;   //focal length
     double m_fx;
