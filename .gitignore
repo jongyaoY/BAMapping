@@ -1,5 +1,6 @@
 build/
 debug/
 dataset_local/
+third_party/cpu_tsdf/build/
 CMakeLists.txt.user
 CMakeLists.txt.user.31e1583

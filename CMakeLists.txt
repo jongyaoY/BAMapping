@@ -32,43 +32,48 @@ include_directories(${CERES_INCLUDE_DIRS})
 find_package(Pangolin 0.4 REQUIRED)
 include_directories(${Pangolin_INCLUDE_DIRS})
 
-#add_library(${PROJECT_NAME}SHARED
-#            src/util/Optimize.cpp
-#            src/util/Frame.cpp
-#            src/util/Point.cpp
-#            src/util/Graph.cpp
-#            src/util/BundleAdjuster.cpp
-#            src/util/bal_problem.cpp
-#            src/Viewer.cpp
-#            src/Reader.cpp)
-add_library(${PROJECT_NAME})
+find_package(CPUTSDF REQUIRED PATHS third_party/cpu_tsdf/build)
+include_directories(${CPUTSDF_INCLUDE_DIR})
+
+add_library(${PROJECT_NAME} SHARED
+            src/util/Optimize.cpp
+            src/util/Frame.cpp
+            src/util/Point.cpp
+            src/util/Graph.cpp
+            src/util/BundleAdjuster.cpp
+            src/util/bal_problem.cpp
+            src/Viewer.cpp
+            src/Reader.cpp
+            src/Writer.cpp)
+#add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
+                                 ${CPUTSDF_LIBRARIES}
 #                                 ${CHOLMOD_LIBRARIES}
 #                                 ${GFLAGS_LIBRARIES}
                                  ${Pangolin_LIBRARIES})
 
-add_executable(System src/System.cpp
-                        src/util/Optimize.cpp
-                        src/util/Frame.cpp
-                        src/util/Point.cpp
-                        src/util/Graph.cpp
-                        src/util/BundleAdjuster.cpp
-                        src/util/bal_problem.cpp
-                        src/Viewer.cpp
-                        src/Reader.cpp)
+add_executable(System src/System.cpp)
+#                        src/util/Optimize.cpp
+#                        src/util/Frame.cpp
+#                        src/util/Point.cpp
+#                        src/util/Graph.cpp
+#                        src/util/BundleAdjuster.cpp
+#                        src/util/bal_problem.cpp
+#                        src/Viewer.cpp
+#                        src/Reader.cpp)
 target_link_libraries(System ${PROJECT_NAME})
 
-add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp
-                                    src/util/Optimize.cpp
-                                    src/util/Frame.cpp
-                                    src/util/Point.cpp
-                                    src/util/Graph.cpp
-                                    src/util/BundleAdjuster.cpp
-                                    src/util/bal_problem.cpp
-                                    src/Viewer.cpp
-                                    src/Reader.cpp
-                                    src/Writer.cpp)
+add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
+#                                    src/util/Optimize.cpp
+#                                    src/util/Frame.cpp
+#                                    src/util/Point.cpp
+#                                    src/util/Graph.cpp
+#                                    src/util/BundleAdjuster.cpp
+#                                    src/util/bal_problem.cpp
+#                                    src/Viewer.cpp
+#                                    src/Reader.cpp
+#                                    src/Writer.cpp)
 target_link_libraries(test_bundleAdjuster ${PROJECT_NAME})
 
 
