@@ -13,13 +13,24 @@ void Frame::setPose(Pose pose)
 
 void Frame::setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point)
 {
-    m_angleAxis = angleAxis;m_translation = point;
+    m_angleAxis = angleAxis;
+    m_translation = point;
+}
+
+void Frame::setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d t)
+{
+    m_angleAxis = Eigen::AngleAxisd(q);
+    m_translation = t;
 }
 void Frame::addObservation(Observation obs)
 {
     m_Observations.push_back(obs);
 }
-
+template<>
+void Frame::setTimeStamp(const double timeStampe)
+{
+    m_timeStamp = timeStampe;
+}
 template<>
 void Frame::setIntrinsics(const double fx, const double fy, const double cx, const double cy)
 {
@@ -57,7 +68,7 @@ void Frame::getMutable(double* param)
     *(param + 8) = m_k2; //second order distortion
 }
 
-const Frame::Pose Frame::getConstTwc()
+const Frame::Pose Frame::getConstTwc() const
 {
     Pose Twc;
     Eigen::Matrix3d R;
@@ -73,7 +84,7 @@ const Frame::Pose Frame::getConstTwc()
     return Twc;
 }
 
-const Frame::Pose Frame::getConstTcw()
+const Frame::Pose Frame::getConstTcw() const
 {
     Pose Tcw;
     Eigen::Matrix3d R;
@@ -105,6 +116,14 @@ int Frame::getParamBlockSize()
     return mParamBlockSize;
 }
 
+void Frame::setImagePaths(const char* rgb_path,const char* depth_path)
+{
+    m_rgbImgPath = rgb_path;
+    m_depthImgPath = depth_path;
+}
+
 int Frame::mParamBlockSize = 9;
 int Frame::mRotationBlockSize = 3;
 int Frame::mIntrinsicsBlockSize = 3;
+
+

@@ -80,3 +80,45 @@ bool Reader::readPoints(Graph *pGraph, const char* point_file)
     fclose(pF);
     return true;
 }
+
+bool Reader::readTUMFrames(FrameVector& frames,const std::string dataSetPath, const std::string assoFileName, const std::string poseFileName)
+{
+    FILE* assoFilePtr;
+    FILE* poseFilePtr;
+    assoFilePtr = fopen((dataSetPath+assoFileName).c_str(),"r");
+    while(!feof(assoFilePtr))
+    {
+        Frame frame;
+        double rgb_timeStamp,depth_timeStamp;
+        char* rgb_path = new char[1024];
+        char* depth_path = new char[1024];
+        fscanf(assoFilePtr,"%lf %s %lf %s",&rgb_timeStamp,rgb_path,&depth_timeStamp,depth_path);
+        frame.setImagePaths((dataSetPath+std::string(rgb_path)).c_str(),(dataSetPath+std::string(depth_path)).c_str());
+        frame.setTimeStamp(rgb_timeStamp);
+        frames.push_back(frame);
+        delete[] rgb_path;
+        delete[] depth_path;
+    }
+    fclose(assoFilePtr);
+    int line = 0;
+    poseFilePtr = fopen((dataSetPath+poseFileName).c_str(),"r");
+    for(auto &frame : frames)
+    {
+        double timeStamp;
+        float tx,ty,tz,qx,qy,qz,qw;
+        while(!feof(poseFilePtr))
+        {
+            fscanf(poseFilePtr,"%lf %f %f %f %f %f %f %f",&timeStamp,
+                                        &tx,&ty,&tz,&qx,&qy,&qz,&qw);
+
+            if(std::fabs(frame.getTimeStamp()-timeStamp)<0.01)
+            {
+                frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(tx,ty,tz));
+
+                break;
+            }
+        }
+    }
+
+    return true;
+}

@@ -17,7 +17,9 @@ public:
     void addObservation(Observation obs);
     inline void setPose(Pose Tcw);
     void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
-
+    void setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d t);
+    template<typename T>
+    void setTimeStamp(const T timeStampe);
     template<typename T>
     void setIntrinsics(const T fx, const T fy, const T cx, const T cy);
     template<typename T>
@@ -27,10 +29,15 @@ public:
     const ObservationVector getObservations()const {return m_Observations;}
     const unsigned int getObservationSize()const {return m_Observations.size();}
     static int getParamBlockSize();
-    const Pose getConstTwc();
-    const Pose getConstTcw();
+    const Pose getConstTwc() const;
+    const Pose getConstTcw() const;
     const Eigen::AngleAxisd getConstAngleAxis();
     const Eigen::Vector3d getConstTranslation();
+    inline double getTimeStamp() const{return m_timeStamp;}
+
+    void setImagePaths(const char* rgb_path,const char* depth_path);
+    inline std::string getRGBImagePath()const {return m_rgbImgPath;}
+    inline std::string getDepthImagePath()const {return m_depthImgPath;}
 private:
     double m_timeStamp;
     //for optimization

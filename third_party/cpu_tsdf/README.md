@@ -8,7 +8,7 @@ Note: This tool is meant primarily for exploring the basics of volumetric recons
 Build Instructions
 ===================
 ```bash
-mkdir build && cd build && cmake .. && make
+mkdir build && cd build && cmake .. && make(cmake -DCMAKE_INSTALL_PREFIX=. ..)
 ```
 
 Usage

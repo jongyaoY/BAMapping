@@ -25,7 +25,7 @@ set (CMAKE_CXX_STANDARD 11)
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
-find_package(PCL 1.7 QUIET REQUIRED)
+find_package(PCL REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -40,6 +40,10 @@ find_package(CPUTSDF REQUIRED PATHS third_party/cpu_tsdf/build)
 include_directories(${CPUTSDF_INCLUDE_DIRS})
 link_directories(${CPUTSDF_LIBRARY_DIRS})
 
+
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
 add_library(${PROJECT_NAME} SHARED
             src/util/Optimize.cpp
             src/util/Frame.cpp
@@ -49,7 +53,8 @@ add_library(${PROJECT_NAME} SHARED
             src/util/bal_problem.cpp
             src/Viewer.cpp
             src/Reader.cpp
-            src/Writer.cpp)
+            src/Writer.cpp
+            src/Integrater.cpp)
 #add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
@@ -57,7 +62,8 @@ target_link_libraries(${PROJECT_NAME}
 #                                 ${CHOLMOD_LIBRARIES}
 #                                 ${GFLAGS_LIBRARIES}
                                  ${Pangolin_LIBRARIES}
-                                 ${PCL_LIBRARIES})
+                                 ${PCL_LIBRARIES}
+                                 ${OpenCV_LIBS})
 
 add_executable(System src/System.cpp)
 #                        src/util/Optimize.cpp
@@ -84,5 +90,7 @@ target_link_libraries(test_bundleAdjuster ${PROJECT_NAME})
 
 add_executable(test_cpu_tsdf src/tests/test_cpu_tsdf.cpp)
 target_link_libraries(test_cpu_tsdf ${CPUTSDF_LIBRARIES}
-                                    ${PCL_LIBRARIES})
+                                    ${PCL_LIBRARIES}
+                                    ${OpenCV_LIBS}
+                                    ${PROJECT_NAME})
 
