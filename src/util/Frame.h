@@ -2,7 +2,7 @@
 #define FRAME_H
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
-
+#include <memory>
 #include "Point.h"
 
 class Frame
@@ -11,10 +11,11 @@ public:
     typedef Eigen::Matrix<float,4,4,Eigen::ColMajor> Pose;
     typedef std::pair<unsigned int,Eigen::Vector3d> Observation;
     typedef std::vector<Observation> ObservationVector;
-
+    typedef std::shared_ptr<Frame> Ptr;
     Frame();
 
     void addObservation(Observation obs);
+    void addObservation(unsigned int point_id,double u,double v,double d);
     inline void setPose(Pose Tcw);
     void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
     void setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d t);
@@ -25,7 +26,8 @@ public:
     template<typename T>
     void setDistortionFactors(const T k1, const T k2);
 
-    void getMutable(double* param);
+    void getIntrinsics(double& fx,double& fy,double& cx,double& cy);
+    void getMutable(double* param, bool withIntrinsics = true);
     const ObservationVector getObservations()const {return m_Observations;}
     const unsigned int getObservationSize()const {return m_Observations.size();}
     static int getParamBlockSize();
@@ -63,4 +65,5 @@ private:
 
 typedef std::vector<Frame> FrameVector;
 typedef std::vector<Frame*> FramePtrVector;
+
 #endif // FRAME_H

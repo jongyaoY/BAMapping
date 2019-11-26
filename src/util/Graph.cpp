@@ -7,6 +7,25 @@ Graph::Graph()
     mFrameBlockSize = Frame::getParamBlockSize();
 
 }
+
+Graph Graph::getSubGraph(unsigned int begin,unsigned int end)
+{
+    Graph subGraph;
+    if(begin >= m_framePtrs.size() || end >= m_framePtrs.size())
+        return subGraph;
+    FrameVector frames = getConstFrames();
+    for(int i = begin; i < end; i++)
+    {
+        subGraph.addFrame(frames[i]);
+    }
+    PointVector points = getConstPoints();
+    for(auto point : points)
+    {
+        subGraph.addPoint(point);
+    }
+
+}
+
 void Graph::addFrame(const Frame frame)
 {
     Frame* pFrame = new Frame(frame);
@@ -83,7 +102,7 @@ void Graph::getOptParameters(double *cam_param, double *point_param)
         m_pointPtrs[point_id]->getMutable(point);
     }
 }
-void Graph::getOptParameters(double** cam_param,double** point_param)
+void Graph::getOptParameters(double** cam_param,double** point_param,bool withIntrinsics)
 {
     int cam_size = m_framePtrs.size();
     int point_size = m_pointPtrs.size();
@@ -93,7 +112,7 @@ void Graph::getOptParameters(double** cam_param,double** point_param)
     for(int cam_id = 0; cam_id < m_framePtrs.size(); cam_id++)
     {
         cam = cam_param[cam_id];
-        m_framePtrs[cam_id]->getMutable(cam);
+        m_framePtrs[cam_id]->getMutable(cam,withIntrinsics);
     }
     for(int point_id = 0; point_id < m_pointPtrs.size(); point_id++)
     {
@@ -102,8 +121,11 @@ void Graph::getOptParameters(double** cam_param,double** point_param)
     }
 }
 
-int Graph::getFrameBlockSize()
+int Graph::getFrameBlockSize(bool withIntrinsics)
 {
+    if(!withIntrinsics)
+        return 6;
+
     return mFrameBlockSize;
 }
 int Graph::getPointBlockSize()

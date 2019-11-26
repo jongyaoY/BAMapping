@@ -21,7 +21,7 @@ void BundleAdjuster::SetLinearSolver(Solver::Options* options)
 
 void BundleAdjuster::SetMinimizerOptions(Solver::Options* options)
 {
-  options->max_num_iterations = 200;
+  options->max_num_iterations = 1000;
   options->minimizer_progress_to_stdout = true;
   options->num_threads = 6;
   options->eta = 1e-2;
@@ -40,7 +40,7 @@ void BundleAdjuster::SetSolverOptions(Graph *graph, Solver::Options* options)
 {
   SetMinimizerOptions(options);
   SetLinearSolver(options);
-  SetOrdering(graph, options);
+//  SetOrdering(graph, options);
 }
 
 void BundleAdjuster::SetOrdering(Graph *graph, Solver::Options* options)
@@ -84,19 +84,23 @@ void BundleAdjuster::BuildProblem(Graph *graph,Problem* problem)
     }
     for(int i = 0; i < point_size; i++)
     {
-        point_param[i] = new double[cameraBlock_size];
+        point_param[i] = new double[pointBlock_size];
     }
     graph->getOptParameters(cam_param,point_param);
 
     for(int i = 0; i < pFrames.size(); i++)
     {
         Frame::ObservationVector observations = pFrames[i]->getObservations();
+        double fx,fy,cx,cy;
+        pFrames[i]->getIntrinsics(fx,fy,cx,cy);
+        Error_3D::setIntrinsics(fx,fy,cx,cy);
 
         for(int j = 0; j < observations.size(); j++)
         {
             CostFunction* cost_function;
-            cost_function = Error::Create(observations[j].second[0], observations[j].second[1]);
-            LossFunction* loss_function = new HuberLoss(1.0);
+//            cost_function = Error::Create(observations[j].second[0], observations[j].second[1]);
+            cost_function = Error_3D::Create(observations[j].second[0], observations[j].second[1], observations[j].second[2]);
+//            LossFunction* loss_function = new HuberLoss(1.0);
             problem->AddResidualBlock(cost_function, NULL, cam_param[i], point_param[observations[j].first]);
         }
     }

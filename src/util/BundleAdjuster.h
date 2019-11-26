@@ -32,6 +32,68 @@ public:
 
 };
 
+struct Error_3D
+{
+   Error_3D(double observed_x, double observed_y, double observed_z)
+      : u(observed_x), v(observed_y), d(observed_z) {}
+
+  template <typename T>
+  bool operator()(const T* const camera,
+                  const T* const point,
+                  T* residuals) const
+  {
+      T p[3];
+      ceres::AngleAxisRotatePoint(camera, point, p);
+
+      // camera[3,4,5] are the translation.
+      p[0] += camera[3];
+      p[1] += camera[4];
+      p[2] += camera[5];
+
+      T xp = p[0] / p[2];
+      T yp = p[1] / p[2];
+
+      // Compute final projected point position.
+
+      T predicted_u = fx_ * xp + cx_;
+      T predicted_v = fy_ * yp + cy_;
+      T predicted_d = p[2];
+
+      // The error is the difference between the predicted and observed position.
+      residuals[0] = u - predicted_u;
+      residuals[1] = v - predicted_v;
+      residuals[2] = d - predicted_d;
+    return true;
+  }
+
+   static ceres::CostFunction* Create(const double observed_x,
+                                      const double observed_y,
+                                      const double observed_z) {
+     return (new ceres::AutoDiffCostFunction<Error_3D, 3, 6, 3>(
+                 new Error_3D(observed_x, observed_y,observed_z)));
+   }
+
+  double u;
+  double v;
+  double d;
+
+  static void setIntrinsics(double fx,double fy,double cx,double cy)
+  {
+      fx_ = fx;
+      fy_ = fy;
+      cx_ = cx;
+      cy_ = cy;
+  }
+  static double fx_;
+  static double fy_;
+  static double cx_;
+  static double cy_;
+};
+
+double Error_3D::fx_;
+double Error_3D::fy_;
+double Error_3D::cx_;
+double Error_3D::cy_;
 
 struct Error
 {

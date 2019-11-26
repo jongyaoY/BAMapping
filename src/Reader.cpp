@@ -122,3 +122,121 @@ bool Reader::readTUMFrames(FrameVector& frames,const std::string dataSetPath, co
 
     return true;
 }
+
+bool Reader::readITEFrames(Graph *pGraph, const char* cam_file, const char *obs_file, const char *dataset_path)
+{
+    FILE* pF_cam;
+    FILE* pF_obs;
+    pF_cam = fopen(cam_file,"r");
+    if(pF_cam == NULL)
+        return false;
+
+    FrameVector frameVec;
+    int cam_id_offset = -1;
+    unsigned int line = 0;
+    while(!feof(pF_cam))
+    {
+        //FrameId qw qx qy qz px py pz absoluteTime timeIndex
+        Frame frame;
+        unsigned int frame_id;
+        double frame_id_temp,time_id;
+        char* cam_id_str = new char[7];
+        double t;
+        double x,y,z,qx,qy,qz,qw;
+        double fx,fy,cx,cy;
+        int num_scanned = fscanf(pF_cam,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&frame_id_temp,&qw,&qx,&qy,&qz,&x,&y,&z,&t,&time_id);
+        frame_id = frame_id_temp;
+//        frame_id = cam_id_offset;
+        if(cam_id_offset < 0)
+        {
+            cam_id_offset = static_cast<int>(frame_id_temp);
+            frame_id = cam_id_offset;
+        }
+        else
+            frame_id = cam_id_offset + line;
+
+        line++;
+
+        sprintf(cam_id_str,"%06d",frame_id);
+        std::string rgbImg_path = std::string(dataset_path);
+        rgbImg_path += "rgb/";
+        rgbImg_path += "ColorRealsense";
+        rgbImg_path += std::string(cam_id_str);
+        rgbImg_path += ".png";
+        std::string depthImg_path = std::string(dataset_path);
+        depthImg_path += "depth/";
+        depthImg_path += "DepthRealsense";
+        depthImg_path += std::string(cam_id_str);
+        depthImg_path +=    ".png";
+
+        frame.setImagePaths(rgbImg_path.c_str(),depthImg_path.c_str());
+        if(num_scanned != 10)
+            break;
+
+        frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(x,y,z));
+
+        fx = 4.31828094e+02;
+        fy = 4.31828094e+02;
+        cx = 3.23000610e+02;
+        cy = 2.40218506e+02;
+        frame.setIntrinsics(fx,fy,cx,cy);
+        frame.setDistortionFactors(0.,0.);
+        //
+        frameVec.push_back(frame);
+    }
+
+    pF_obs = fopen(obs_file,"r");
+    if(pF_obs == NULL)
+        return false;
+
+    while(!feof(pF_obs))
+    {
+        Frame::Observation indexedObs;
+        Eigen::Vector3d obs;
+        int u,v;
+        float d;
+        unsigned int cam_id;
+        unsigned int point_id;
+        int num_scanned = fscanf(pF_obs,"%d %d %d %d %f",&point_id,&cam_id,&u,&v,&d);
+        if(num_scanned != 5)
+            break;
+        obs[0] = static_cast<double>(u);
+        obs[1] = static_cast<double>(v);
+        obs[2] = d;
+        indexedObs.first = point_id;
+        indexedObs.second[0] = static_cast<double>(u);
+        indexedObs.second[1] = static_cast<double>(v);
+        indexedObs.second[2] = d;
+        if((cam_id - cam_id_offset) < frameVec.size())
+        {
+//            frameVec[cam_id - cam_id_offset].addObservation(indexedObs);
+            frameVec[cam_id - cam_id_offset].addObservation(point_id,static_cast<double>(u),static_cast<double>(v),d);
+        }
+    }
+    for(auto frame : frameVec)
+    {
+        pGraph->addFrame(frame);
+    }
+    fclose(pF_cam);
+    fclose(pF_obs);
+    return true;
+}
+
+
+bool Reader::readITEPoints(Graph *pGraph, const char* point_file)
+{
+    FILE* pF;
+    pF = fopen(point_file,"r");
+    while(!feof(pF))
+    {
+        unsigned int id;
+        double x,y,z;
+        int num_scanned = fscanf(pF,"%d %lf %lf %lf",&id,&x,&y,&z);
+        if(num_scanned != 4)
+            break;
+        Point point(x,y,z);
+        pGraph->addPoint(point);
+    }
+    fclose(pF);
+    return true;
+}

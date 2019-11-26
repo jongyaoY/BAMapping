@@ -9,7 +9,6 @@
 #include "cpu_tsdf/tsdf_volume_octree.h"
 #include "cpu_tsdf/marching_cubes_tsdf_octree.h"
 #include "opencv4/opencv2/opencv.hpp"
-//#include "opencv4/opencv2/imgcodecs.hpp"
 #include "../Integrater.h"
 #include "../Reader.h"
 //#include "../Viewer.h"
@@ -73,13 +72,26 @@ void createPCL(const char* img_name,pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_cl
 int main(int argc, char** argv)
 {
     Integrater integrater;
-    integrater.init(argv[1]);
     FrameVector frames;
+    integrater.init(argv[1]);
+//    integrater.init("../dataset_local/ITE_dataset/ITE.yaml");
     Reader::readTUMFrames(frames,"../dataset_local/fr1desk/","fr1_desk.txt","groundtruth.txt");
-//    Viewer viewer;
-//    viewer.setFrames(frames);
-//    viewer.visualize();
-    int num_max = 200;
+
+//    Graph graph;
+//    Reader::readITEFrames(&graph,"../dataset_local/ITE_dataset/cameras.txt",
+//                          "../dataset_local/ITE_dataset/observations.txt",
+//                          "../dataset_local/ITE_dataset/");
+//    unsigned int begin = 100;
+//    unsigned int end = 120;
+//    FrameVector frames = graph.getConstFrames();
+//    int num = 0;
+//    for(int i = begin; i < end; i++)
+//    {
+//        std::cout<<"dealing frame:"<<i<<std::endl;
+//        integrater.integrateFrame(frames[i]);
+//    }
+
+    int num_max = 10;
     int num = 0;
     for(auto frame : frames)
     {
@@ -89,6 +101,6 @@ int main(int argc, char** argv)
             break;
         num++;
     }
-    integrater.saveTSDF("../dataset_local/tsdf.vol");
+//    integrater.saveTSDF("../dataset_local/tsdf.vol");
     integrater.generateMesh();
 }

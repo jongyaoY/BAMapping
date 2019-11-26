@@ -7,12 +7,15 @@ class Graph
 {
 public:
     Graph();
+
+    Graph getSubGraph(unsigned int begin,unsigned int end);
+
     void getOptParameters(double *cam_param,double* point_param);
-    void getOptParameters(double** cam_param, double** point_param);
+    void getOptParameters(double** cam_param, double** point_param, bool withIntrinsics = false);
     void update(double *cam_param,double* point_param);
     void update(double** cam_param,double** point_param);
 
-    int getFrameBlockSize();
+    int getFrameBlockSize(bool withIntrinsics = false);
     int getPointBlockSize();
 
     void addFrame(const Frame frame);
