@@ -132,7 +132,7 @@ void Viewer::drawFrame(Frame frame)
     float w,h,z;
     w = mKeyFrameSize; //in meter
     h = 0.6*w;
-    z = 0.5*w;
+    z = w;
     glLineWidth(mKeyFrameLineWidth);
     glColor3f(mFrameColor[0],mFrameColor[1],mFrameColor[2]);
     glBegin(GL_LINES);

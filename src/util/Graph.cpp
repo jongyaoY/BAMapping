@@ -157,6 +157,7 @@ void Graph::update(double** cam_param,double** point_param)
     {
         double* cam = cam_param[i];
         double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
+        norm = sqrt(norm);
         Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
 
         m_framePtrs[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));

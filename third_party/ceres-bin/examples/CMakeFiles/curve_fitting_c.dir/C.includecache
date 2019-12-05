@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/examples/curve_fitting.c
+math.h
+-
+stdio.h
+-
+string.h
+-
+ceres/c_api.h
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/examples/ceres/c_api.h
+
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/c_api.h
+ceres/internal/port.h
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/ceres/internal/port.h
+ceres/internal/disable_warnings.h
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/ceres/internal/disable_warnings.h
+ceres/internal/reenable_warnings.h
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/ceres/internal/reenable_warnings.h
+
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/internal/disable_warnings.h
+
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/internal/port.h
+cstddef
+-
+ceres/internal/config.h
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/internal/ceres/internal/config.h
+tr1/memory
+-
+memory
+-
+
+/home/jojo/BAMapping/third_party/ceres-solver-1.14.0/include/ceres/internal/reenable_warnings.h
+
+config/ceres/internal/config.h
+

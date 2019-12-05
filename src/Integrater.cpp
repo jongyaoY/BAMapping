@@ -1,103 +1,79 @@
 #include "Integrater.h"
+#include "util/Parser.h"
 
 Integrater::Integrater()
 {
-    mDepthFactor = 1/5000.;
+
 }
 void Integrater::init(std::string strSettingPath)
 {
-    cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
-    mTSDF_param.fx = fSettings["Camera.fx"];
-    mTSDF_param.fy = fSettings["Camera.fy"];
-    mTSDF_param.cx = fSettings["Camera.cx"];
-    mTSDF_param.cy = fSettings["Camera.cy"];
+    Parser parser;
+    parser.load(strSettingPath);
+    int width = parser.getValue<int>("Camera.width");
+    int height = parser.getValue<int>("Camera.height");
+    double fx = parser.getValue<double>("Camera.fx");
+    double fy = parser.getValue<double>("Camera.fy");
+    double cx = parser.getValue<double>("Camera.cx");
+    double cy = parser.getValue<double>("Camera.cy");
+    mIntrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+    mTSDF_param.tsdf_size = parser.getValue<float>("TSDF.size");
 
-    mTSDF_param.tsdf_size = fSettings["TSDF.size"];
-    mTSDF_param.tsdf_res = fSettings["TSDF.resolution"];
-    mTSDF_param.trunc_dist_pos = fSettings["TSDF.truncated_distance_pos"];
-    mTSDF_param.trunc_dist_neg = fSettings["TSDF.truncated_distance_neg"];
-    mTSDF_param.min_sensor_dist = fSettings["TSDF.min_sensor_dist"];
-    mTSDF_param.max_sensor_dist = fSettings["TSDF.max_sensor_dist"];
-    mTSDF_param.num_random_splits = fSettings["TSDF.num_random_splits"];
-    mTSDF_param.image_width = fSettings["TSDF.image_width"];
-    mTSDF_param.image_height = fSettings["TSDF.image_height"];
-    mTSDF_param.integrate_color = true;//fSettings["TSDF.integrate_color"];
+    mTSDF_param.tsdf_res = parser.getValue<float>("TSDF.resolution");
+    mTSDF_param.depth_factor = parser.getValue<double>("TSDF.depth_factor");
+    mTSDF_param.depth_truncate = parser.getValue<double>("TSDF.depth_truncate");
 
-    mTSDF.reset (new cpu_tsdf::TSDFVolumeOctree);
-    mTSDF->setGridSize(mTSDF_param.tsdf_size,mTSDF_param.tsdf_size,mTSDF_param.tsdf_size);
-    mTSDF->setResolution(mTSDF_param.tsdf_res,mTSDF_param.tsdf_res,mTSDF_param.tsdf_res);
-    mTSDF->setImageSize (mTSDF_param.image_width, mTSDF_param.image_height);
-    mTSDF->setCameraIntrinsics (mTSDF_param.fx, mTSDF_param.fy, mTSDF_param.cx, mTSDF_param.cy);
-    mTSDF->setNumRandomSplts (mTSDF_param.num_random_splits);
-    mTSDF->setSensorDistanceBounds (mTSDF_param.min_sensor_dist, mTSDF_param.max_sensor_dist);
-    mTSDF->setIntegrateColor (mTSDF_param.integrate_color);
-    mTSDF->setDepthTruncationLimits (mTSDF_param.trunc_dist_pos, mTSDF_param.trunc_dist_neg);
-    mTSDF->reset ();
+    mVolume_ptr.reset(
+            new open3d::integration::ScalableTSDFVolume
+            (mTSDF_param.tsdf_size/mTSDF_param.tsdf_res,
+             0.01*mTSDF_param.tsdf_size,
+             open3d::integration::TSDFVolumeColorType::RGB8)
+            );
+
+
+
 }
 
 bool Integrater::integrateFrame(const Frame frame)
 {
-    using namespace cpu_tsdf;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
-    cloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
+    using namespace open3d;
+    geometry::Image color;
+    geometry::Image depth;
 
-    generatePointCloud(frame.getRGBImagePath().c_str(),frame.getDepthImagePath().c_str(),cloud);
-    Eigen::Affine3f pose;
-    Eigen::Matrix4f Twc;
-    pose.matrix() = frame.getConstTwc();
-    mTSDF->integrateCloud(*cloud,pcl::PointCloud<pcl::PointNormal>(),pose.inverse().cast<double>());
-}
-void Integrater::generatePointCloud(const char* rgbImg_path,const char* DepthImg_path,pcl::PointCloud<pcl::PointXYZRGB>::Ptr in_cloud)
-{
-    cv::Mat img;
-    cv::Mat depth;
-    pcl::PointCloud<pcl::PointXYZRGB> cloud;
-    img = cv::imread(rgbImg_path,cv::IMREAD_COLOR);
-    depth = cv::imread(DepthImg_path,cv::IMREAD_UNCHANGED);
-    if(depth.cols != img.cols || depth.rows != img.rows)
-        return;
-    cloud.width    = img.cols;
-    cloud.height   = img.rows;
-    cloud.is_dense = false;
-    cloud.points.resize (cloud.width * cloud.height);
-    depth.convertTo(depth,CV_32F,mDepthFactor);
-    if(img.channels()==3)
-    {
-        cv::MatIterator_<cv::Vec3b> it_rgb;
-        cv::MatIterator_<float> it_depth;
-        int i;
-        for (it_rgb = img.begin<cv::Vec3b>(),it_depth = depth.begin<float>(), i=0; it_rgb != img.end<cv::Vec3b>() ; it_rgb++,it_depth++,i++)
-        {
-          cloud.points[i].x = i/cloud.width;
-          cloud.points[i].y = i%cloud.width;
-          cloud.points[i].z = (*it_depth);
-          cloud.points[i].r = (*it_rgb)[2];
-          cloud.points[i].g = (*it_rgb)[1];
-          cloud.points[i].b = (*it_rgb)[0];
-        }
-    *in_cloud = cloud;
-    }
+    io::ReadImage(frame.getRGBImagePath().c_str(), color);
+    io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+    auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
+            color, depth, mTSDF_param.depth_factor,
+                          mTSDF_param.depth_truncate, false);
 
+    Eigen::Matrix4d extrinsic = Eigen::Matrix4d::Identity();
+
+//    auto pose = frame.getConstTwc();
+    auto pose = frame.getConstTcw();
+
+    extrinsic.topLeftCorner(3,3)<<pose(0,0),pose(0,1),pose(0,2),
+                                               pose(1,0),pose(1,1),pose(1,2),
+                                               pose(2,0),pose(2,1),pose(2,2);
+    extrinsic.topRightCorner(3,1)<<pose(0,3),pose(1,3),pose(2,3);
+    mVolume_ptr->Integrate(*rgbd,
+                     mIntrinsic,
+                     extrinsic);
 }
+
 bool Integrater::saveTSDF(const char* path)
 {
-    mTSDF->save(path);
+//    auto mesh = mVolume.ExtractTriangleMesh();
+//                    io::WriteTriangleMesh("mesh_" + save_index_str + ".ply",
+//                                          *mesh);
     return true;
 }
 
 bool Integrater::generateMesh(bool visualize)
 {
-    cpu_tsdf::MarchingCubesTSDFOctree mc;
-    mc.setInputTSDF (mTSDF);
-    mc.setMinWeight (1); // Sets the minimum weight -- i.e. if a voxel sees a point less than 2 times, it will not render  a mesh triangle at that location
-    mc.setColorByRGB (true); // If true, tries to use the RGB values of the TSDF for meshing -- required if you want a colored mesh
-    pcl::PolygonMesh mesh;
-    mc.reconstruct (mesh);
-
-    pcl::visualization::PCLVisualizer::Ptr vis;
-    vis.reset (new pcl::visualization::PCLVisualizer);
-    vis->addCoordinateSystem ();
-    vis->removeAllPointClouds ();
-    vis->addPolygonMesh (mesh);
-    vis->spin ();
+    using namespace open3d;
+    auto mesh = mVolume_ptr->ExtractTriangleMesh();
+//    mesh->ComputeVertexNormals();
+    io::WriteTriangleMesh("mesh.ply",*mesh);
+    if(visualize)
+        visualization::DrawGeometriesWithCustomAnimation(
+            {mesh}, "Animation", 1920, 1080);
 }

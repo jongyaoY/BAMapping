@@ -84,7 +84,7 @@ void Frame::getMutable(double* param, bool withIntrinsics)
 
 const Frame::Pose Frame::getConstTwc() const
 {
-    Pose Twc;
+    Pose Twc = Pose::Identity();
     Eigen::Matrix3d R;
     Eigen::Vector3d t;
     R = m_angleAxis.inverse().toRotationMatrix();
@@ -100,7 +100,7 @@ const Frame::Pose Frame::getConstTwc() const
 
 const Frame::Pose Frame::getConstTcw() const
 {
-    Pose Tcw;
+    Pose Tcw = Pose::Identity();
     Eigen::Matrix3d R;
     Eigen::Vector3d t;
 

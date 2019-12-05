@@ -22,27 +22,45 @@ set (CMAKE_CXX_STANDARD 11)
 #set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY})
 
 
-find_package(Ceres REQUIRED)
-include_directories(${CERES_INCLUDE_DIRS})
 
-find_package(PCL REQUIRED)
-include_directories(${PCL_INCLUDE_DIRS})
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+#find_package(PCL REQUIRED)
+#include_directories(${PCL_INCLUDE_DIRS})
+#link_directories(${PCL_LIBRARY_DIRS})
+#add_definitions(${PCL_DEFINITIONS})
+
+find_package(Ceres REQUIRED PATHS libs/ceres_lib)
+include_directories(${CERES_INCLUDE_DIRS})
 
 #include_directories(${GFLAGS_INCLUDE_DIRS})
 #add_definitions(-DCERES_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
 
-find_package(Pangolin 0.4 REQUIRED)
+find_package(Pangolin 0.4 REQUIRED PATHS libs/pangolin_lib)
 include_directories(${Pangolin_INCLUDE_DIRS})
 
-find_package(CPUTSDF REQUIRED PATHS third_party/cpu_tsdf/build)
-include_directories(${CPUTSDF_INCLUDE_DIRS})
-link_directories(${CPUTSDF_LIBRARY_DIRS})
+#find_package(CPUTSDF REQUIRED PATHS third_party/cpu_tsdf/build)
+#include_directories(${CPUTSDF_INCLUDE_DIRS})
+#link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 
-find_package( OpenCV REQUIRED )
+find_package( OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
+
+find_package(Open3D REQUIRED PATHS libs/open3d_lib/lib/cmake)
+list(APPEND Open3D_LIBRARIES dl)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Open3D_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${Open3D_EXE_LINKER_FLAGS}")
+
+include_directories(${Open3D_INCLUDE_DIRS})
+add_definitions(-DUNIX)
+add_compile_options(-Wno-deprecated-declarations)
+add_compile_options(-Wno-unused-result)
+add_definitions(-O3)
+link_directories(${Open3D_LIBRARY_DIRS})
+
+
+include_directories(${PROJECT_SOURCE_DIR}/libs/orbslam_lib/include)
 
 add_library(${PROJECT_NAME} SHARED
             src/util/Optimize.cpp
@@ -51,6 +69,7 @@ add_library(${PROJECT_NAME} SHARED
             src/util/Graph.cpp
             src/util/BundleAdjuster.cpp
             src/util/bal_problem.cpp
+            src/util/Parser.cpp
             src/Viewer.cpp
             src/Reader.cpp
             src/Writer.cpp
@@ -58,39 +77,39 @@ add_library(${PROJECT_NAME} SHARED
 #add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
-                                 ${CPUTSDF_LIBRARIES}
 #                                 ${CHOLMOD_LIBRARIES}
 #                                 ${GFLAGS_LIBRARIES}
                                  ${Pangolin_LIBRARIES}
-                                 ${PCL_LIBRARIES}
-                                 ${OpenCV_LIBS})
+                                 ${Open3D_LIBRARIES}
+#                                 ${OpenCV_LIBS}
+                        )
 
 add_executable(System src/System.cpp)
-#                        src/util/Optimize.cpp
-#                        src/util/Frame.cpp
-#                        src/util/Point.cpp
-#                        src/util/Graph.cpp
-#                        src/util/BundleAdjuster.cpp
-#                        src/util/bal_problem.cpp
-#                        src/Viewer.cpp
-#                        src/Reader.cpp)
+
 target_link_libraries(System ${PROJECT_NAME})
 
 add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
-#                                    src/util/Optimize.cpp
-#                                    src/util/Frame.cpp
-#                                    src/util/Point.cpp
-#                                    src/util/Graph.cpp
-#                                    src/util/BundleAdjuster.cpp
-#                                    src/util/bal_problem.cpp
-#                                    src/Viewer.cpp
-#                                    src/Reader.cpp
-#                                    src/Writer.cpp)
-target_link_libraries(test_bundleAdjuster ${PROJECT_NAME})
 
-add_executable(test_cpu_tsdf src/tests/test_cpu_tsdf.cpp)
-target_link_libraries(test_cpu_tsdf ${CPUTSDF_LIBRARIES}
-                                    ${PCL_LIBRARIES}
+target_link_libraries(test_bundleAdjuster ${PROJECT_NAME}
+                                        ${Open3D_LIBRARIES})
+
+add_executable(test_TSDF_fusion src/tests/test_TSDF_fusion.cpp)
+target_link_libraries(test_TSDF_fusion ${Open3D_LIBRARIES}
+                                       ${PROJECT_NAME})
+
+add_executable(test_orbslam src/tests/test_orbslam.cpp)
+target_link_libraries(test_orbslam  ${PROJECT_SOURCE_DIR}/libs/orbslam_lib/lib/libORB_SLAM2.so
                                     ${OpenCV_LIBS}
-                                    ${PROJECT_NAME})
+                                    ${Pangolin_LIBRARIES}
+                                    )
+
+
+add_executable(test_TF src/tests/test_TF.cpp)
+
+target_link_libraries(test_TF ${PROJECT_NAME})
+#add_executable(test_cpu_tsdf src/tests/test_cpu_tsdf.cpp)
+#target_link_libraries(test_cpu_tsdf ${CPUTSDF_LIBRARIES}
+#                                    ${PCL_LIBRARIES}
+#                                    ${OpenCV_LIBS}
+#                                    ${PROJECT_NAME})
 

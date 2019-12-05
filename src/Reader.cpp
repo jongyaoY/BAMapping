@@ -1,6 +1,6 @@
 #include "Reader.h"
 #include "ceres/rotation.h"
-
+#include "util/Parser.h"
 Reader::Reader()
 {
 }
@@ -86,44 +86,87 @@ bool Reader::readTUMFrames(FrameVector& frames,const std::string dataSetPath, co
     FILE* assoFilePtr;
     FILE* poseFilePtr;
     assoFilePtr = fopen((dataSetPath+assoFileName).c_str(),"r");
-    while(!feof(assoFilePtr))
+
+    poseFilePtr = fopen((dataSetPath+poseFileName).c_str(),"r");
+    while(!feof(poseFilePtr))
     {
         Frame frame;
-        double rgb_timeStamp,depth_timeStamp;
-        char* rgb_path = new char[1024];
-        char* depth_path = new char[1024];
-        fscanf(assoFilePtr,"%lf %s %lf %s",&rgb_timeStamp,rgb_path,&depth_timeStamp,depth_path);
-        frame.setImagePaths((dataSetPath+std::string(rgb_path)).c_str(),(dataSetPath+std::string(depth_path)).c_str());
-        frame.setTimeStamp(rgb_timeStamp);
-        frames.push_back(frame);
-        delete[] rgb_path;
-        delete[] depth_path;
-    }
-    fclose(assoFilePtr);
-    int line = 0;
-    poseFilePtr = fopen((dataSetPath+poseFileName).c_str(),"r");
-    for(auto &frame : frames)
-    {
         double timeStamp;
         float tx,ty,tz,qx,qy,qz,qw;
-        while(!feof(poseFilePtr))
+        int num = fscanf(poseFilePtr,"%lf %f %f %f %f %f %f %f",&timeStamp,
+                                    &tx,&ty,&tz,&qx,&qy,&qz,&qw);
+        if(num!=8)
+            break;
+        //read in Twc -> Tcw
+        Eigen::Matrix3d R;
+        Eigen::Vector3d trans;
+        auto q = Eigen::Quaterniond(qw,qx,qy,qz);
+        R = Eigen::AngleAxisd(q).inverse().toRotationMatrix();
+        trans = R*Eigen::Vector3d(tx,ty,tz);
+        trans *= -1;
+        q = q.inverse();
+        frame.setTimeStamp(timeStamp);
+        frame.setFromQuaternionAndPoint(q,trans);
+            frames.push_back(frame);
+
+    }
+    for(auto &frame : frames)
+    {
+        while(!feof(assoFilePtr))
         {
-            fscanf(poseFilePtr,"%lf %f %f %f %f %f %f %f",&timeStamp,
-                                        &tx,&ty,&tz,&qx,&qy,&qz,&qw);
-
-            if(std::fabs(frame.getTimeStamp()-timeStamp)<0.01)
+            double rgb_timeStamp,depth_timeStamp;
+            char* rgb_path = new char[1024];
+            char* depth_path = new char[1024];
+            fscanf(assoFilePtr,"%lf %s %lf %s",&rgb_timeStamp,rgb_path,&depth_timeStamp,depth_path);
+            if(std::fabs(frame.getTimeStamp()-rgb_timeStamp)<0.01)
             {
-                frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(tx,ty,tz));
-
+                frame.setImagePaths((dataSetPath+std::string(rgb_path)).c_str(),(dataSetPath+std::string(depth_path)).c_str());
                 break;
             }
+            delete[] rgb_path;
+            delete[] depth_path;
         }
     }
+    fclose(poseFilePtr);
+    fclose(assoFilePtr);
+//    while(!feof(assoFilePtr))
+//    {
+//        Frame frame;
+//        double rgb_timeStamp,depth_timeStamp;
+//        char* rgb_path = new char[1024];
+//        char* depth_path = new char[1024];
+//        fscanf(assoFilePtr,"%lf %s %lf %s",&rgb_timeStamp,rgb_path,&depth_timeStamp,depth_path);
+//        frame.setImagePaths((dataSetPath+std::string(rgb_path)).c_str(),(dataSetPath+std::string(depth_path)).c_str());
+//        frame.setTimeStamp(rgb_timeStamp);
+//        frames.push_back(frame);
+//        delete[] rgb_path;
+//        delete[] depth_path;
+//    }
+//    fclose(assoFilePtr);
+//    int line = 0;
+//    poseFilePtr = fopen((dataSetPath+poseFileName).c_str(),"r");
+//    for(auto &frame : frames)
+//    {
+//        double timeStamp;
+//        float tx,ty,tz,qx,qy,qz,qw;
+//        while(!feof(poseFilePtr))
+//        {
+//            fscanf(poseFilePtr,"%lf %f %f %f %f %f %f %f",&timeStamp,
+//                                        &tx,&ty,&tz,&qx,&qy,&qz,&qw);
+//
+//            if(std::fabs(frame.getTimeStamp()-timeStamp)<0.01)
+//            {
+//                frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(tx,ty,tz));
+//
+//                break;
+//            }
+//        }
+//    }
 
     return true;
 }
 
-bool Reader::readITEFrames(Graph *pGraph, const char* cam_file, const char *obs_file, const char *dataset_path)
+bool Reader::readITEFrames(Graph *pGraph, const char* cam_file, const char *obs_file, const char *dataset_path,const char *config_file)
 {
     FILE* pF_cam;
     FILE* pF_obs;
@@ -143,7 +186,7 @@ bool Reader::readITEFrames(Graph *pGraph, const char* cam_file, const char *obs_
         char* cam_id_str = new char[7];
         double t;
         double x,y,z,qx,qy,qz,qw;
-        double fx,fy,cx,cy;
+        double fx,fy,cx,cy,k1,k2;
         int num_scanned = fscanf(pF_cam,"%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf",&frame_id_temp,&qw,&qx,&qy,&qz,&x,&y,&z,&t,&time_id);
         frame_id = frame_id_temp;
 //        frame_id = cam_id_offset;
@@ -173,14 +216,30 @@ bool Reader::readITEFrames(Graph *pGraph, const char* cam_file, const char *obs_
         if(num_scanned != 10)
             break;
 
-        frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(x,y,z));
+        //read in Twc -> Tcw
+            Eigen::Matrix3d R;
+            Eigen::Vector3d trans;
+            auto q = Eigen::Quaterniond(qw,qx,qy,qz);
+            R = Eigen::AngleAxisd(q).inverse().toRotationMatrix();
+            trans = R*Eigen::Vector3d(x,y,z);
+            trans *= -1;
 
-        fx = 4.31828094e+02;
-        fy = 4.31828094e+02;
-        cx = 3.23000610e+02;
-        cy = 2.40218506e+02;
+//        frame.setFromQuaternionAndPoint(Eigen::Quaterniond(qw,qx,qy,qz),Eigen::Vector3d(x,y,z));
+        frame.setFromQuaternionAndPoint(q.inverse(),trans);
+
+
+        Parser parser;
+        parser.load(config_file);
+        fx = parser.getValue<double>("Camera.fx");
+        fy = parser.getValue<double>("Camera.fy");
+        cx = parser.getValue<double>("Camera.cx");
+        cy = parser.getValue<double>("Camera.cy");
+
+        k1 = parser.getValue<double>("Camera.k1:");
+        k2 = parser.getValue<double>("Camera.k2:");
+
         frame.setIntrinsics(fx,fy,cx,cy);
-        frame.setDistortionFactors(0.,0.);
+        frame.setDistortionFactors(k1,k2);
         //
         frameVec.push_back(frame);
     }

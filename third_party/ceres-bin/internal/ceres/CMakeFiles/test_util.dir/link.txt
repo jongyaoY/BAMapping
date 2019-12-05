@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libtest_util.a  CMakeFiles/test_util.dir/evaluator_test_utils.cc.o CMakeFiles/test_util.dir/numeric_diff_test_utils.cc.o CMakeFiles/test_util.dir/test_util.cc.o
+/usr/bin/ranlib ../../lib/libtest_util.a
