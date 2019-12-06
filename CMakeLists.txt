@@ -73,7 +73,7 @@ add_library(${PROJECT_NAME} SHARED
             src/Viewer.cpp
             src/Reader.cpp
             src/Writer.cpp
-            src/Integrater.cpp)
+            src/Integrater.cpp src/Graph.cpp src/Graph.h src/Frame.cpp src/Frame.h src/Point.cpp src/Point.h src/Optimizer.cpp src/Optimizer.h src/Error.h)
 #add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
