@@ -60,10 +60,10 @@ struct Error_3D
       T predicted_d = p[2];
 
       // The error is the difference between the predicted and observed position.
-      residuals[0] = u - predicted_u;
-      residuals[1] = v - predicted_v;
+      residuals[0] = predicted_u - u;
+      residuals[1] = predicted_v - v;
       if(d>0)
-          residuals[2] = d - predicted_d;
+          residuals[2] = predicted_d - d;
       else
           residuals[2] = (T) 0;
     return true;

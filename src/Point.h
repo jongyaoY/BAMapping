@@ -23,7 +23,7 @@ namespace BAMapping
 
         void getMutable(double* param);
         const Eigen::Vector3d getPoseInWorld();
-        const Eigen::Vector3d getPoseInFrame(const Eigen::Affine3d Twc);
+        const Eigen::Vector3d getPoseInFrame(const Eigen::Matrix4d Tcw);
     private:
         Eigen::Vector3d mPose;
         size_t mIndex;

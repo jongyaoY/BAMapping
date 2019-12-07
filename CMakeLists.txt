@@ -73,7 +73,16 @@ add_library(${PROJECT_NAME} SHARED
             src/Viewer.cpp
             src/Reader.cpp
             src/Writer.cpp
-            src/Integrater.cpp src/Graph.cpp src/Graph.h src/Frame.cpp src/Frame.h src/Point.cpp src/Point.h src/Optimizer.cpp src/Optimizer.h src/Error.h)
+            src/Integrater.cpp
+#new
+            src/Graph.cpp
+            src/Graph.h
+            src/Frame.cpp
+            src/Point.cpp
+            src/Optimizer.cpp
+            src/Error.h
+            src/io/Reader.cpp
+            src/io/Parser.cpp src/util/Converter.cpp src/util/Converter.h)
 #add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
@@ -107,9 +116,11 @@ target_link_libraries(test_orbslam  ${PROJECT_SOURCE_DIR}/libs/orbslam_lib/lib/l
 add_executable(test_TF src/tests/test_TF.cpp)
 
 target_link_libraries(test_TF ${PROJECT_NAME})
-#add_executable(test_cpu_tsdf src/tests/test_cpu_tsdf.cpp)
-#target_link_libraries(test_cpu_tsdf ${CPUTSDF_LIBRARIES}
-#                                    ${PCL_LIBRARIES}
-#                                    ${OpenCV_LIBS}
-#                                    ${PROJECT_NAME})
+
+add_executable(test_Submap src/tests/test_Submap.cpp)
+
+target_link_libraries(test_Submap ${PROJECT_NAME}
+                                  ${Open3D_LIBRARIES})
+
+
 

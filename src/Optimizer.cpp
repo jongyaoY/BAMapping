@@ -18,6 +18,8 @@ void Optimizer::localGraphOptimize(Graph *pLocalGraph)
 
     Solver::Summary summary;
     Solve(options, &problem, &summary);
+    pLocalGraph->update(cam_param,point_param);
+
     std::cout << summary.FullReport() << "\n";
 }
 

@@ -621,7 +621,7 @@ public:
   /** \returns a const pointer to the column major internal matrix */
   EIGEN_DEVICE_FUNC const Scalar* data() const { return m_matrix.data(); }
   /** \returns a non-const pointer to the column major internal matrix */
-  EIGEN_DEVICE_FUNC Scalar* data() { return m_matrix.data(); }
+  EIGEN_DEVICE_FUNC float * data() { return m_matrix.data(); }
 
   /** \returns \c *this with scalar type casted to \a NewScalarType
     *

@@ -25,7 +25,7 @@ int main(int argc, char** argv)
                           "../dataset_local/ITE_dataset/ITE.yaml");
     Reader::readITEPoints(&graph,"../dataset_local/ITE_dataset/points.txt");
     viewer.setRefPoints(graph.getConstPoints());
-    subGraph = graph.getSubGraph(130,400);
+    subGraph = graph.getSubGraph(130,271);
     BundleAdjuster::solve(&subGraph);
 
     viewer.setFrames(subGraph.getConstFrames());
@@ -33,19 +33,19 @@ int main(int argc, char** argv)
 //    Writer::writeToFile(graph,"../files/cameras_result","points_result");
     viewer.visualize();
 
-//    Integrater integrater;
-//    auto frames = subGraph.getConstFrames();
-//    integrater.init("../dataset_local/ITE_dataset/ITE.yaml");
-//
-//    for(int i = 0;i<frames.size();i++)
-//    {
-//        printf("%i\n",i);
-//        if(i>frames.size())
-//            break;
-//        integrater.integrateFrame(frames[i]);
-//
-//    }
-//    integrater.generateMesh(true);
+    Integrater integrater;
+    auto frames = subGraph.getConstFrames();
+    integrater.init("../dataset_local/ITE_dataset/ITE.yaml");
+
+    for(int i = 0;i<frames.size();i++)
+    {
+        printf("%i\n",i);
+        if(i>frames.size())
+            break;
+        integrater.integrateFrame(frames[i]);
+
+    }
+    integrater.generateMesh(true);
 
     return 0;
     //    FrameVector frames;

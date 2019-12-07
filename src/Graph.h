@@ -18,12 +18,16 @@ namespace BAMapping
         typedef std::pair<size_t ,size_t> pair;
 
         Graph() = default;
-        void addFrame(const Frame frame);
-        void addPoint(const Point point);
+        static void addGlobalFrame(const Frame frame);
+        static void addGlobalPoint(const Point point);
+        void addFrame(Frame* pFrame);
+        void addPoint(Point* pPoint);
         void addEdge(const pair ids,const Eigen::Vector3d observation);
 
         const FrameVector getConstFrames();
         const PointVector getConstPoints();
+        const FrameVector getConstGlobalFrames();
+        const PointVector getConstGlobalPoints();
 
         void getOptParameters(double** cam_param, double** point_param);
         size_t getFrameVectorSize();
@@ -36,6 +40,7 @@ namespace BAMapping
 
 
     protected:
+        //Todo
         //trim points that are observed by less then N frames
         void trimPointsAndEdges(unsigned int threshold);
         //
@@ -47,14 +52,14 @@ namespace BAMapping
         std::vector<Graph*> mChildGraphVec;
         FramePtrVector mpFrameVec;
         PointPtrVector mpPointVec;
-//        FrameVector mFrameVec;
-//        PointVector mPointVec;
-        //(frame_id , point_id) -> observation
+        std::vector<size_t> mTrackedPointIndexes;
+
+//        (frame_id , point_id) -> observation
         std::map<pair,Eigen::Vector3d> mEdges;
 
         //global
-        static std::map<size_t,Frame*> mpIndexedFrames;
-        static std::map<size_t,Point*> mpIndexedPoints;
+        static std::map<size_t,Frame*> mpGlobalIndexedFrames;
+        static std::map<size_t,Point*> mpGlobalIndexedPoints;
         static std::map<pair,Eigen::Vector3d> mObservations;
     };
 
