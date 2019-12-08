@@ -6,7 +6,7 @@
 #define BAMAPPING_GRAPH_H
 
 #include <map>
-
+#include <memory>
 #include "Frame.h"
 #include "Point.h"
 
@@ -16,13 +16,18 @@ namespace BAMapping
     {
     public:
         typedef std::pair<size_t ,size_t> pair;
-
-        Graph() = default;
+        typedef std::shared_ptr<Graph> Ptr;
+        Graph();
+        static void setAsRootGraph(Graph* pRootGraph);
         static void addGlobalFrame(const Frame frame);
         static void addGlobalPoint(const Point point);
+
+        void splitInto(const unsigned int num_subgraphs);
+        void setParent(Ptr parent);
         void addFrame(Frame* pFrame);
         void addPoint(Point* pPoint);
         void addEdge(const pair ids,const Eigen::Vector3d observation);
+        std::vector<Ptr> getSubmaps();
 
         const FrameVector getConstFrames();
         const PointVector getConstPoints();
@@ -48,16 +53,20 @@ namespace BAMapping
         bool hasFrame(size_t FrameIndex);
         bool hasPoint(size_t PointIndex);
 
-        Graph* mParentGraph;
-        std::vector<Graph*> mChildGraphVec;
+        Ptr mpParentGraph;
+        std::vector<Ptr> mpChildGraphVec;
         FramePtrVector mpFrameVec;
         PointPtrVector mpPointVec;
+        PointPtrVector mpSeparatorPointVec;
         std::vector<size_t> mTrackedPointIndexes;
 
 //        (frame_id , point_id) -> observation
         std::map<pair,Eigen::Vector3d> mEdges;
+    private:
+        Ptr mPointer;
 
         //global
+        static Graph* mpRootGraph;
         static std::map<size_t,Frame*> mpGlobalIndexedFrames;
         static std::map<size_t,Point*> mpGlobalIndexedPoints;
         static std::map<pair,Eigen::Vector3d> mObservations;

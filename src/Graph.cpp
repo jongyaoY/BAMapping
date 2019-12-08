@@ -7,11 +7,11 @@ using namespace BAMapping;
 
 void Graph::addFrame(Frame* pFrame)
 {
-    mpFrameVec.push_back(pFrame);
     auto observations = pFrame->getObservations();
+    size_t frame_id = mpFrameVec.size();
+
     for(auto observation : observations)
     {
-        size_t frame_id = mpFrameVec.size();
         size_t point_id = mpPointVec.size();
         size_t global_point_id = observation.first;
         Eigen::Vector3d obs = observation.second;
@@ -20,6 +20,7 @@ void Graph::addFrame(Frame* pFrame)
         addEdge(ids,obs);
         mTrackedPointIndexes.push_back(global_point_id);
     }
+    mpFrameVec.push_back(pFrame);
 }
 
 void Graph::addPoint(Point* pPoint)
@@ -29,14 +30,21 @@ void Graph::addPoint(Point* pPoint)
 
 const FrameVector Graph::getConstFrames()
 {
-    FrameVector frameVec; //todo
-
+    FrameVector frameVec;
+    for(auto pFrame : mpFrameVec)
+    {
+        frameVec.push_back(*pFrame);
+    }
     return frameVec;
 }
 
 const PointVector Graph::getConstPoints()
 {
-    PointVector pointVec; //todo
+    PointVector pointVec;
+    for(auto pPoint : mpPointVec)
+    {
+        pointVec.push_back(*pPoint);
+    }
     return pointVec;
 }
 
@@ -47,6 +55,7 @@ const FrameVector Graph::getConstGlobalFrames()
     {
         frameVec.push_back(*indexedpFrame.second);
     }
+
     return frameVec;
 }
 
@@ -125,8 +134,18 @@ const std::map<Graph::pair,Eigen::Vector3d> Graph::getEdges()
 void Graph::addGlobalFrame(Frame frame)
 {
     Frame* pFrame = new Frame(frame);//Todo copy frame
-    size_t frame_id = mpGlobalIndexedFrames.size();
-    mpGlobalIndexedFrames.emplace(frame_id,pFrame);
+    auto observations = pFrame->getObservations();
+
+    size_t global_frame_id = mpGlobalIndexedFrames.size();
+
+    for(auto observation : observations)
+    {
+        size_t global_point_id = observation.first;
+        Eigen::Vector3d obs = observation.second;
+        auto ids = std::make_pair(global_frame_id,global_point_id);
+        mObservations.emplace(ids,obs);
+    }
+    mpGlobalIndexedFrames.emplace(global_frame_id,pFrame);
 }
 
 void Graph::addEdge(const Graph::pair ids, const Eigen::Vector3d observation)
@@ -141,6 +160,48 @@ void Graph::addGlobalPoint(const Point point)
     mpGlobalIndexedPoints.emplace(point_id,pPoint);
 }
 
+void Graph::splitInto(unsigned int num_subgraphs)
+{
+    int frameProSubgraph = mpFrameVec.size()/num_subgraphs;
+    int frame_id = 0;
+    for(int subgraph_id = 0; subgraph_id < num_subgraphs; subgraph_id++)
+    {
+        Graph::Ptr pSubgraph(new Graph);
+        pSubgraph->setParent(mPointer);
+        mpChildGraphVec.push_back(pSubgraph);
+        for(int i = 0; i < frameProSubgraph; i++, frame_id++)
+        {
+            pSubgraph->addFrame(mpFrameVec[frame_id]);
+        }
+    }
+}
+
+void Graph::setAsRootGraph(Graph* pRootGraph)
+{
+    if(pRootGraph!=NULL)
+        mpRootGraph = pRootGraph;
+    for(auto pIndexedFrame : mpGlobalIndexedFrames)
+    {
+        pRootGraph->addFrame(pIndexedFrame.second);
+    }
+}
+
+void Graph::setParent(Graph::Ptr parent)
+{
+    mpParentGraph = parent;
+}
+
+Graph::Graph()
+{
+    mPointer = Ptr(this);
+}
+
+std::vector<Graph::Ptr> Graph::getSubmaps()
+{
+    return mpChildGraphVec;
+}
+
+Graph* Graph::mpRootGraph;
 std::map<size_t,Frame*> Graph::mpGlobalIndexedFrames;
 std::map<size_t,Point*> Graph::mpGlobalIndexedPoints;
 std::map<Graph::pair,Eigen::Vector3d> Graph::mObservations;
