@@ -21,14 +21,19 @@ namespace BAMapping
         static void setAsRootGraph(Graph* pRootGraph);
         static void addGlobalFrame(const Frame frame);
         static void addGlobalPoint(const Point point);
+        static void addObservationsToPoints();
 
         void splitInto(const unsigned int num_subgraphs);
         void setParent(Ptr parent);
         void addFrame(Frame* pFrame);
-        void addPoint(Point* pPoint);
+        void addPoints();
+        void addEdges();
+        void addPoint(size_t global_index,Point* pPoint);
         void addEdge(const pair ids,const Eigen::Vector3d observation);
         std::vector<Ptr> getSubmaps();
 
+        const FrameVector getLocalConstFrames();
+        const PointVector getLocalConstPoints();
         const FrameVector getConstFrames();
         const PointVector getConstPoints();
         const FrameVector getConstGlobalFrames();
@@ -58,9 +63,11 @@ namespace BAMapping
         FramePtrVector mpFrameVec;
         PointPtrVector mpPointVec;
         PointPtrVector mpSeparatorPointVec;
-        std::vector<size_t> mTrackedPointIndexes;
+        std::list<size_t> mTrackedPointIndexes; //global index
 
 //        (frame_id , point_id) -> observation
+        FrameVector mLocalFrameVec;
+        PointVector mLocalPointVec;
         std::map<pair,Eigen::Vector3d> mEdges;
     private:
         Ptr mPointer;

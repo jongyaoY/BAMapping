@@ -19,9 +19,10 @@ namespace BAMapping
         typedef std::shared_ptr<Frame> Ptr;
 
         Frame() = default;
-//        Frame(Frame const &frame);
+
         void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
         void setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d point);
+        void setFromAffine3d(const Eigen::Affine3d Tcw);
 
         void setTimeStamp(const double timeStampe);
 
@@ -30,6 +31,8 @@ namespace BAMapping
 
         void addObservation(size_t point_id,Eigen::Vector3d observation);
 
+        bool isPointObserved(size_t global_point_id);
+        Eigen::Vector3d getObservationByPointIndex(size_t global_point_id);
         void getIntrinsics(double& fx,double& fy,double& cx,double& cy);
         std::map<size_t ,Eigen::Vector3d> getObservations();
         void getMutable(double* param);
@@ -43,6 +46,7 @@ namespace BAMapping
         inline std::string getRGBImagePath()const {return m_rgbImgPath;}
         inline std::string getDepthImagePath()const {return m_depthImgPath;}
 
+        size_t mGlobalIndex;
 
     private:
         double mTimeStamp;

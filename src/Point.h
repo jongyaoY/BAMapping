@@ -20,13 +20,19 @@ namespace BAMapping
         ~Point() = default;
 
         void setPoint(Eigen::Vector3d pose);
+        void addObservation(size_t global_frame_index,Eigen::Vector3d obs);
+//        bool isObservedByFrame(size_t global_frame_id);
+        size_t getObservationSize();
+        std::map<size_t,Eigen::Vector3d> getObservations();
 
         void getMutable(double* param);
         const Eigen::Vector3d getPoseInWorld();
         const Eigen::Vector3d getPoseInFrame(const Eigen::Matrix4d Tcw);
+
+        size_t mGlobalIndex;
     private:
         Eigen::Vector3d mPose;
-        size_t mIndex;
+        std::map<size_t,Eigen::Vector3d> mObservations;
     };
     typedef std::vector<Point> PointVector;
     typedef std::vector<Point*> PointPtrVector;

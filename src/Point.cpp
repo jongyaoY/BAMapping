@@ -16,6 +16,21 @@ void Point::setPoint(Eigen::Vector3d pose)
 }
 
 
+void Point::addObservation(size_t global_frame_index,Eigen::Vector3d obs)
+{
+    mObservations.emplace(global_frame_index,obs);
+}
+
+size_t Point::getObservationSize()
+{
+    return mObservations.size();
+}
+
+std::map<size_t,Eigen::Vector3d> Point::getObservations()
+{
+    return mObservations;
+}
+
 void Point::getMutable(double* param)
 {
     *(param + 0) = mPose[0];

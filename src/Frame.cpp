@@ -75,6 +75,27 @@ const Eigen::Matrix4d Frame::getConstTcw() const
     return Converter::AngleAxisPointToTcw(m_angleAxis,m_translation);
 }
 
+bool Frame::isPointObserved(size_t global_point_id)
+{
+    auto it = mObservations.find(global_point_id);
+    if(it!=mObservations.end())
+        return true;
+    else
+        return false;
+}
+
+Eigen::Vector3d Frame::getObservationByPointIndex(size_t global_point_id)
+{
+    auto it = mObservations.find(global_point_id);
+    if(it!=mObservations.end())
+        return it->second;
+}
+
+void Frame::setFromAffine3d(Eigen::Affine3d Tcw)
+{
+    Converter::Affine3dTcwToAngleAxisAndPoint(Tcw,m_angleAxis,m_translation);
+}
+
 //intrisic parameters
 double Frame::m_fx;
 double Frame::m_fy;

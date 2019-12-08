@@ -2,6 +2,7 @@
 // Created by jojo on 06.12.19.
 //
 
+#include <iostream>
 #include "Graph.h"
 using namespace BAMapping;
 
@@ -12,20 +13,37 @@ void Graph::addFrame(Frame* pFrame)
 
     for(auto observation : observations)
     {
-        size_t point_id = mpPointVec.size();
         size_t global_point_id = observation.first;
-        Eigen::Vector3d obs = observation.second;
-        auto ids = std::make_pair(frame_id,point_id);
-        addPoint(mpGlobalIndexedPoints[global_point_id]);
-        addEdge(ids,obs);
         mTrackedPointIndexes.push_back(global_point_id);
     }
     mpFrameVec.push_back(pFrame);
 }
 
-void Graph::addPoint(Point* pPoint)
+void Graph::addPoint(size_t global_index,Point* pPoint)
 {
+    auto it = std::find(mTrackedPointIndexes.begin(),mTrackedPointIndexes.end(),global_index);
+    if(it != mTrackedPointIndexes.end()) //point already added
+        return;
     mpPointVec.push_back(pPoint);
+}
+void Graph::addPoints()
+{
+    mTrackedPointIndexes.sort();
+    mTrackedPointIndexes.unique();
+    for(auto global_point_index : mTrackedPointIndexes)
+    {
+        mpPointVec.push_back(mpGlobalIndexedPoints[global_point_index]);
+    }
+}
+
+const FrameVector Graph::getLocalConstFrames()
+{
+    return mLocalFrameVec;
+}
+
+const PointVector Graph::getLocalConstPoints()
+{
+    return mLocalPointVec;
 }
 
 const FrameVector Graph::getConstFrames()
@@ -133,10 +151,11 @@ const std::map<Graph::pair,Eigen::Vector3d> Graph::getEdges()
 
 void Graph::addGlobalFrame(Frame frame)
 {
-    Frame* pFrame = new Frame(frame);//Todo copy frame
+    Frame* pFrame = new Frame(frame);
     auto observations = pFrame->getObservations();
 
     size_t global_frame_id = mpGlobalIndexedFrames.size();
+    pFrame->mGlobalIndex = global_frame_id;
 
     for(auto observation : observations)
     {
@@ -157,6 +176,7 @@ void Graph::addGlobalPoint(const Point point)
 {
     Point* pPoint = new Point(point);
     size_t point_id = mpGlobalIndexedPoints.size();
+    pPoint->mGlobalIndex = point_id;
     mpGlobalIndexedPoints.emplace(point_id,pPoint);
 }
 
@@ -173,6 +193,9 @@ void Graph::splitInto(unsigned int num_subgraphs)
         {
             pSubgraph->addFrame(mpFrameVec[frame_id]);
         }
+        pSubgraph->addPoints();
+        pSubgraph->addEdges();
+        pSubgraph->alignToBaseFrame();
     }
 }
 
@@ -199,6 +222,86 @@ Graph::Graph()
 std::vector<Graph::Ptr> Graph::getSubmaps()
 {
     return mpChildGraphVec;
+}
+
+void Graph::alignToBaseFrame()
+{
+    Frame baseFrame;
+    if(mpFrameVec.empty())
+    {
+        std::cout<<"mpFrameVec empty\n";
+        return;
+    }
+    baseFrame = *mpFrameVec[0];
+    auto Tcw = mpFrameVec[0]->getConstTcw();
+    Eigen::Affine3d Tcw_affine;
+    Tcw_affine.matrix() = Tcw;
+    Eigen::Affine3d baseNode;
+    baseNode.matrix() = Eigen::Matrix4d::Identity();
+    baseFrame.setFromAffine3d(baseNode);
+    mLocalFrameVec.push_back(baseFrame);
+    for(int i = 1; i < mpFrameVec.size(); i++)
+    {
+        Frame localFrame = *mpFrameVec[i];
+        auto Twi = mpFrameVec[i]->getConstTwc();
+        Eigen::Affine3d Tci;
+        Tci.matrix() = Tcw * Twi;
+        localFrame.setFromAffine3d(Tci);
+        mLocalFrameVec.push_back(localFrame);
+    }
+    for(int i = 0; i<mpPointVec.size(); i++)
+    {
+        Point localPoint = *mpPointVec[i];
+        Eigen::Vector3d localPose = Tcw_affine * localPoint.getPoseInWorld();
+        localPoint.setPoint(localPose);
+        mLocalPointVec.push_back(localPoint);
+    }
+
+}
+
+void Graph::trimPointsAndEdges(unsigned int threshold)
+{
+    auto it = mpPointVec.begin();
+    for(;it!=mpPointVec.end();it++)
+    {
+        auto pPoint = *it;
+        if(pPoint->getObservationSize()<threshold)
+        {
+            //todo
+        }
+    }
+}
+
+void Graph::addEdges()
+{
+    size_t point_id = 0;
+    for(auto pPoint: mpPointVec)
+    {
+        auto global_point_id = pPoint->mGlobalIndex;
+        size_t frame_id = 0;
+        for(auto pFrame : mpFrameVec)
+        {
+            if(pFrame->isPointObserved(global_point_id))
+            {
+                auto obs = pFrame->getObservationByPointIndex(global_point_id);
+                mEdges.emplace(std::make_pair(frame_id,point_id),obs);
+            }
+            frame_id++;
+        }
+        point_id++;
+    }
+
+}
+
+void Graph::addObservationsToPoints()
+{
+    for(auto observation : mObservations)
+    {
+        size_t global_frame_id = observation.first.first;
+        size_t global_point_id = observation.first.second;
+        auto obs = observation.second;
+        mpGlobalIndexedPoints[global_point_id]->addObservation(global_frame_id,obs);
+    }
 }
 
 Graph* Graph::mpRootGraph;

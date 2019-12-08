@@ -93,3 +93,10 @@ Eigen::Vector3d Converter::getTransFromMatrix4d(const Eigen::Matrix4d T)
 {
     return Eigen::Vector3d();//todo
 }
+
+void Converter::Affine3dTcwToAngleAxisAndPoint(const Eigen::Affine3d Tcw, Eigen::AngleAxisd &angleAxis,
+                                               Eigen::Vector3d &point)
+{
+    angleAxis.fromRotationMatrix(Tcw.rotation());
+    point = Tcw.translation();
+}
