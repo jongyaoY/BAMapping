@@ -58,3 +58,14 @@ const Eigen::Vector3d Point::getPoseInFrame(const Eigen::Matrix4d Tcw)
     pose = Tcw*pose;
     return Eigen::Vector3d(pose[0],pose[1],pose[2]);
 }
+
+Point* Point::getpMirrorPointWithAffine3d(Eigen::Affine3d Tcw)
+{
+    Point* pMirrorPoint = new Point(*this);
+    auto mirrorPose = Tcw * mPose;
+    pMirrorPoint->setPoint(mirrorPose);
+    mpLocalMirrorPoints.push_back(pMirrorPoint);
+    pMirrorPoint->mpOriginPoint = this;
+    pMirrorPoint->mpLocalMirrorPoints.clear();
+    return pMirrorPoint;
+}

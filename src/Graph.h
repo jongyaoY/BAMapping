@@ -28,10 +28,12 @@ namespace BAMapping
         void addFrame(Frame* pFrame);
         void addPoints();
         void addEdges();
+        void addInterObservation();//todo
         void addPoint(size_t global_index,Point* pPoint);
         void addEdge(const pair ids,const Eigen::Vector3d observation);
         std::vector<Ptr> getSubmaps();
 
+        const std::list<size_t> getTrackedPointIndexes();
         const FrameVector getLocalConstFrames();
         const PointVector getLocalConstPoints();
         const FrameVector getConstFrames();
@@ -48,6 +50,7 @@ namespace BAMapping
         const std::map<pair,Eigen::Vector3d> getEdges();
         void update(double** cam_param,double** point_param);
 
+        size_t mIndex;
 
     protected:
         //Todo
@@ -57,6 +60,8 @@ namespace BAMapping
         void alignToBaseFrame();
         bool hasFrame(size_t FrameIndex);
         bool hasPoint(size_t PointIndex);
+
+        void findSeparatorPoints();
 
         Ptr mpParentGraph;
         std::vector<Ptr> mpChildGraphVec;
@@ -71,7 +76,6 @@ namespace BAMapping
         std::map<pair,Eigen::Vector3d> mEdges;
     private:
         Ptr mPointer;
-
         //global
         static Graph* mpRootGraph;
         static std::map<size_t,Frame*> mpGlobalIndexedFrames;

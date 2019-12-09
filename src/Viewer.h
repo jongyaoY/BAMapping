@@ -44,6 +44,8 @@ namespace BAMapping
         inline void setRefPoints(PointVector points){m_refPoints = points;}
         inline void setPoints(PointVector points){m_points = points;}
         inline void setFrames(FrameVector frames){m_frames = frames;}
+        void appendFrames(FrameVector frames);
+        void appendPoints(PointVector points);
     private:
         void drawPoint(const Point point, GLfloat* color);
         void drawFrame(const Frame frame);

@@ -25,13 +25,16 @@ namespace BAMapping
         size_t getObservationSize();
         std::map<size_t,Eigen::Vector3d> getObservations();
 
+        Point* getpMirrorPointWithAffine3d(Eigen::Affine3d Tcw);
         void getMutable(double* param);
         const Eigen::Vector3d getPoseInWorld();
         const Eigen::Vector3d getPoseInFrame(const Eigen::Matrix4d Tcw);
 
         size_t mGlobalIndex;
+        Point* mpOriginPoint;
+        std::vector<Point*> mpLocalMirrorPoints;
     private:
-        Eigen::Vector3d mPose;
+        Eigen::Vector3d mPose;//global pose
         std::map<size_t,Eigen::Vector3d> mObservations;
     };
     typedef std::vector<Point> PointVector;

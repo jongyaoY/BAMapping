@@ -59,6 +59,39 @@ bool Integrater::integrateFrame(const Frame frame)
                      extrinsic);
 }
 
+bool Integrater::integrateFrame(const BAMapping::Frame frame)
+{
+    using namespace open3d;
+    geometry::Image color;
+    geometry::Image depth;
+
+    bool read = false;
+    read = io::ReadImage(frame.getRGBImagePath().c_str(), color);
+    if(!read)
+        return false;
+    read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+    if(!read)
+        return false;
+
+    auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
+            color, depth, mTSDF_param.depth_factor,
+            mTSDF_param.depth_truncate, false);
+
+    Eigen::Matrix4d extrinsic = Eigen::Matrix4d::Identity();
+
+//    auto pose = frame.getConstTwc();
+    auto pose = frame.getConstTcw();
+
+    extrinsic.topLeftCorner(3,3)<<pose(0,0),pose(0,1),pose(0,2),
+            pose(1,0),pose(1,1),pose(1,2),
+            pose(2,0),pose(2,1),pose(2,2);
+    extrinsic.topRightCorner(3,1)<<pose(0,3),pose(1,3),pose(2,3);
+//    std::cout<<extrinsic<<std::endl;
+    mVolume_ptr->Integrate(*rgbd,
+                           mIntrinsic,
+                           extrinsic);
+}
+
 bool Integrater::saveTSDF(const char* path)
 {
 //    auto mesh = mVolume.ExtractTriangleMesh();

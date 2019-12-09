@@ -165,7 +165,7 @@ namespace BAMapping
     {
         mKeyFrameSize = 0.05;
         mKeyFrameLineWidth = 1;
-        mPointSize = 1;
+        mPointSize = 3;
 
         mFrameColor[0] = 0.;
         mFrameColor[1] = 0.;
@@ -317,5 +317,15 @@ namespace BAMapping
         glEnd();
 
         glPopMatrix();
+    }
+
+    void Viewer::appendFrames(FrameVector frames)
+    {
+        m_frames.insert(m_frames.end(),frames.begin(),frames.end());
+    }
+
+    void Viewer::appendPoints(PointVector points)
+    {
+        m_points.insert(m_points.end(),points.begin(),points.end());
     }
 }

@@ -3,6 +3,8 @@
 //
 
 #include "Optimizer.h"
+#include "io/Parser.h"
+
 using namespace BAMapping;
 using namespace ceres;
 
@@ -12,6 +14,22 @@ void Optimizer::localGraphOptimize(Graph *pLocalGraph)
     Solver::Options options;
     double** cam_param;
     double** point_param;
+    int camera_size = pLocalGraph->getFrameVectorSize();
+    int point_size = pLocalGraph->getPointVectorSize();
+    auto cameraBlock_size = pLocalGraph->getFrameBlockSize();
+    auto pointBlock_size = pLocalGraph->getPointBlockSize();
+
+    cam_param = new double* [camera_size];
+    point_param = new double* [point_size];
+    for(int i = 0; i < camera_size; i++)
+    {
+        cam_param[i] = new double[cameraBlock_size];
+    }
+    for(int i = 0; i < point_size; i++)
+    {
+        point_param[i] = new double[pointBlock_size];
+    }
+
     builProblem(pLocalGraph,&problem,cam_param,point_param);
     SetMinimizerOptions(&options);
     SetLinearSolver(&options);
@@ -30,19 +48,19 @@ void Optimizer::builProblem(Graph* pGraph, Problem* problem,double** cam_param,d
 
     int camera_size = pGraph->getFrameVectorSize();
     int point_size = pGraph->getPointVectorSize();
-    auto cameraBlock_size = pGraph->getFrameBlockSize();
-    auto pointBlock_size = pGraph->getPointBlockSize();
+//    auto cameraBlock_size = pGraph->getFrameBlockSize();
+//    auto pointBlock_size = pGraph->getPointBlockSize();
 
-    cam_param = new double* [camera_size];
-    point_param = new double* [point_size];
-    for(int i = 0; i < camera_size; i++)
-    {
-        cam_param[i] = new double[cameraBlock_size];
-    }
-    for(int i = 0; i < point_size; i++)
-    {
-        point_param[i] = new double[pointBlock_size];
-    }
+//    cam_param = new double* [camera_size];
+//    point_param = new double* [point_size];
+//    for(int i = 0; i < camera_size; i++)
+//    {
+//        cam_param[i] = new double[cameraBlock_size];
+//    }
+//    for(int i = 0; i < point_size; i++)
+//    {
+//        point_param[i] = new double[pointBlock_size];
+//    }
     pGraph->getOptParameters(cam_param,point_param);
     auto edges = pGraph->getEdges();
     for(auto edge : edges)
@@ -58,10 +76,11 @@ void Optimizer::builProblem(Graph* pGraph, Problem* problem,double** cam_param,d
         }
 
         CostFunction* cost_function;
-        cost_function = AlignmentError_3D::Create(observation[0], observation[1], observation[2]);
-        //            LossFunction* loss_function = new HuberLoss(1.0);
+        LossFunction* loss_function = new HuberLoss(1.0);
 
-        problem->AddResidualBlock(cost_function, NULL, cam_param[cam_id], point_param[point_id]);
+        cost_function = AlignmentError_3D::Create(observation[0], observation[1], observation[2]);
+
+        problem->AddResidualBlock(cost_function, loss_function, cam_param[cam_id], point_param[point_id]);
 
     }
 }
@@ -86,14 +105,20 @@ void Optimizer::SetMinimizerOptions(Solver::Options* options)
 void Optimizer::SetLinearSolver(Solver::Options* options)
 {
     options->linear_solver_type = LinearSolverType::DENSE_SCHUR;
-//  options->preconditioner_type = PreconditionerType::JACOBI;
-//  options->visibility_clustering_type = VisibilityClusteringType::CANONICAL_VIEWS;
-//  options->sparse_linear_algebra_library_type = SparseLinearAlgebraLibraryType::SUITE_SPARSE;
-//  options->dense_linear_algebra_library_type = DenseLinearAlgebraLibraryType::EIGEN;
+  options->preconditioner_type = PreconditionerType::JACOBI;
+  options->visibility_clustering_type = VisibilityClusteringType::CANONICAL_VIEWS;
+  options->sparse_linear_algebra_library_type = SparseLinearAlgebraLibraryType::SUITE_SPARSE;
+  options->dense_linear_algebra_library_type = DenseLinearAlgebraLibraryType::EIGEN;
     options->use_explicit_schur_complement = false;
 }
 
 void Optimizer::init(std::string configFile)
 {
-
+    BAMapping::io::Parser parser;
+    parser.load(configFile);
+    double fx = parser.getValue<double>("Camera.fx");
+    double fy = parser.getValue<double>("Camera.fy");
+    double cx = parser.getValue<double>("Camera.cx");
+    double cy = parser.getValue<double>("Camera.cy");
+    AlignmentError_3D::setIntrinsics(fx,fy,cx,cy);
 }

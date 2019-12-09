@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "util/Frame.h"
+#include "Frame.h"
 #include <Open3D/Open3D.h>
 
 class Integrater
@@ -13,6 +14,7 @@ class Integrater
 public:
     Integrater();
     void init(std::string strSettingPath);
+    bool integrateFrame(const BAMapping::Frame frame);
     bool integrateFrame(const Frame frame);
     bool saveTSDF(const char* path);
     bool generateMesh(bool visualize = true);

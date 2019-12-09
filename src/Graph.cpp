@@ -97,12 +97,15 @@ void Graph::getOptParameters(double **cam_param, double **point_param)
     for(int cam_id = 0; cam_id < cam_size; cam_id++)
     {
         cam = cam_param[cam_id];
-        mpFrameVec[cam_id]->getMutable(cam);
+        mLocalFrameVec[cam_id].getMutable(cam);
+//        mpFrameVec[cam_id]->getMutable(cam);
     }
     for(int point_id = 0; point_id < point_size; point_id++)
     {
         point = point_param[point_id];
-        mpPointVec[point_id]->getMutable(point);
+        mLocalPointVec[point_id].getMutable(point);
+//        mpPointVec[point_id]->getMutable(point);
+
     }
 }
 
@@ -113,14 +116,16 @@ void Graph::update(double **cam_param, double **point_param)
         double* cam = cam_param[i];
         double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
         norm = sqrt(norm);
+        std::cout<<Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm)<<std::endl;
         Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
-
-        mpFrameVec[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        mLocalFrameVec[i].setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+//        mpFrameVec[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
     }
     for(int i = 0; i < mpPointVec.size(); i++)
     {
         double* point = point_param[i];
-        mpPointVec[i]->setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
+        mLocalPointVec[i].setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
+//        mpPointVec[i]->setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
     }
 }
 
@@ -197,6 +202,8 @@ void Graph::splitInto(unsigned int num_subgraphs)
         pSubgraph->addEdges();
         pSubgraph->alignToBaseFrame();
     }
+
+    findSeparatorPoints();
 }
 
 void Graph::setAsRootGraph(Graph* pRootGraph)
@@ -233,9 +240,10 @@ void Graph::alignToBaseFrame()
         return;
     }
     baseFrame = *mpFrameVec[0];
-    auto Tcw = mpFrameVec[0]->getConstTcw();
-    Eigen::Affine3d Tcw_affine;
-    Tcw_affine.matrix() = Tcw;
+    auto Twc0 = mpFrameVec[0]->getConstTwc();
+    auto Tc0w = mpFrameVec[0]->getConstTcw();
+    Eigen::Affine3d Tc0w_affine;
+    Tc0w_affine.matrix() = Tc0w;
     Eigen::Affine3d baseNode;
     baseNode.matrix() = Eigen::Matrix4d::Identity();
     baseFrame.setFromAffine3d(baseNode);
@@ -243,18 +251,19 @@ void Graph::alignToBaseFrame()
     for(int i = 1; i < mpFrameVec.size(); i++)
     {
         Frame localFrame = *mpFrameVec[i];
-        auto Twi = mpFrameVec[i]->getConstTwc();
-        Eigen::Affine3d Tci;
-        Tci.matrix() = Tcw * Twi;
-        localFrame.setFromAffine3d(Tci);
+        auto Tciw = mpFrameVec[i]->getConstTcw();
+        Eigen::Affine3d Tcic0;
+        Tcic0.matrix() = Tciw * Twc0;
+        localFrame.setFromAffine3d(Tcic0);
         mLocalFrameVec.push_back(localFrame);
     }
     for(int i = 0; i<mpPointVec.size(); i++)
     {
-        Point localPoint = *mpPointVec[i];
-        Eigen::Vector3d localPose = Tcw_affine * localPoint.getPoseInWorld();
-        localPoint.setPoint(localPose);
-        mLocalPointVec.push_back(localPoint);
+//        Point localPoint = *mpPointVec[i];
+//        Eigen::Vector3d localPose = Tc0w_affine * localPoint.getPoseInWorld();
+//        localPoint.setPoint(localPose);
+          Point localPoint = *mpPointVec[i]->getpMirrorPointWithAffine3d(Tc0w_affine);
+          mLocalPointVec.push_back(localPoint);
     }
 
 }
@@ -301,6 +310,29 @@ void Graph::addObservationsToPoints()
         size_t global_point_id = observation.first.second;
         auto obs = observation.second;
         mpGlobalIndexedPoints[global_point_id]->addObservation(global_frame_id,obs);
+    }
+}
+const std::list<size_t> Graph::getTrackedPointIndexes()
+{
+    return mTrackedPointIndexes;
+}
+
+void Graph::findSeparatorPoints()
+{
+    //todo
+    std::list<size_t> result_list;
+    for(int i = 0;i<mpChildGraphVec.size()-1;i++)
+    {
+        for(int j = i+1;j<mpChildGraphVec.size();j++)
+        {
+            std::list<size_t> list1 = mpChildGraphVec[i]->getTrackedPointIndexes();
+            std::list<size_t> list2 = mpChildGraphVec[j]->getTrackedPointIndexes();
+            std::list<size_t> intersect_list;
+            std::set_intersection(list1.begin(),list1.end(),
+                                  list2.begin(),list2.end(),
+                                  std::back_inserter(intersect_list));
+            result_list.insert(result_list.end(),intersect_list.begin(),intersect_list.end());
+        }
     }
 }
 
