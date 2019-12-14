@@ -18,6 +18,7 @@ struct AlignmentError_3D
                     T* residuals) const
     {
         T p[3];
+        T p_obs[3];
         ceres::AngleAxisRotatePoint(camera, point, p);
 
         // camera[3,4,5] are the translation.
@@ -25,22 +26,14 @@ struct AlignmentError_3D
         p[1] += camera[4];
         p[2] += camera[5];
 
-        T xp = p[0] / p[2];
-        T yp = p[1] / p[2];
+        p_obs[0] = (T) (u-cx_)*d/fx_;
+        p_obs[1] = (T) (v-cy_)*d/fy_;
+        p_obs[2] = (T) d;
 
-        // Compute final projected point position.
 
-        T predicted_u = fx_ * xp + cx_;
-        T predicted_v = fy_ * yp + cy_;
-        T predicted_d = p[2];
-
-        // The error is the difference between the predicted and observed position.
-        residuals[0] = predicted_u - u;
-        residuals[1] = predicted_v - v;
-        if(d>0)
-            residuals[2] = predicted_d - d;
-        else
-            residuals[2] = (T) 0;
+        residuals[0] = p[0] - p_obs[0];
+        residuals[1] = p[1] - p_obs[1];
+        residuals[2] = p[2] - p_obs[2];
         return true;
     }
 

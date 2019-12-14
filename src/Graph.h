@@ -28,7 +28,7 @@ namespace BAMapping
         void addFrame(Frame* pFrame);
         void addPoints();
         void addEdges();
-        void addInterObservation();//todo
+        void addInterObservations();//todo
         void addPoint(size_t global_index,Point* pPoint);
         void addEdge(const pair ids,const Eigen::Vector3d observation);
         std::vector<Ptr> getSubmaps();
@@ -40,17 +40,29 @@ namespace BAMapping
         const PointVector getConstPoints();
         const FrameVector getConstGlobalFrames();
         const PointVector getConstGlobalPoints();
+        //for intergraph optimization
+        void getInterGraphOptParameters(double** cam_param, double** point_param);
+        Frame getBaseFrame();
+        void setBaseFramePoseByAngleAxisAndPoint(Eigen::AngleAxisd angleAxis, Eigen::Vector3d point);
+        Ptr getParent() const;
+        std::vector<Ptr> getChildren() const;
+        std::vector<Point*> getpSeparators() const;
 
         void getOptParameters(double** cam_param, double** point_param);
         size_t getFrameVectorSize();
         size_t getPointVectorSize();
-
+        size_t getSupGraphSize();
+        size_t getSeparatorSize();
         size_t getFrameBlockSize();
         size_t getPointBlockSize();
         const std::map<pair,Eigen::Vector3d> getEdges();
-        void update(double** cam_param,double** point_param);
+        const std::map<pair,Eigen::Vector3d> getInterObservations();
+        void updateLocal(double** cam_param,double** point_param);
+        void updateGlobal(double** cam_param,double** point_param);
+        void applyLocal();
+        void applyGlobal();
 
-        size_t mIndex;
+        size_t mGraphIndex;
 
     protected:
         //Todo
@@ -74,6 +86,7 @@ namespace BAMapping
         FrameVector mLocalFrameVec;
         PointVector mLocalPointVec;
         std::map<pair,Eigen::Vector3d> mEdges;
+        std::map<pair,Eigen::Vector3d> mInterObservations;
     private:
         Ptr mPointer;
         //global

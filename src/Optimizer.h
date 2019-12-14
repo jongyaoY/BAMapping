@@ -14,13 +14,15 @@ namespace BAMapping
     class Optimizer
     {
     public:
-        void interGraphOptimize(std::vector<Graph*> pGlobalGraphVec);
         //multi threads optimization
+        static void optimize(Graph* pGraph, size_t submapSize = 30);
         static void localGraphOptimize(Graph* pLocalGraph);
+        static void interGraphOptimize(Graph* pGraph);
         static void init(std::string configFile);
 
     private:
         static void builProblem(Graph* pGraph, ceres::Problem* problem,double** cam_param,double** point_param);
+        static void buildProblemInterGraph(Graph* pGraph, ceres::Problem* problem,double** cam_param,double** point_param);
         static void SetMinimizerOptions(ceres::Solver::Options* options);
         static void SetLinearSolver(ceres::Solver::Options* options);
     };

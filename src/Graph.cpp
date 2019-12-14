@@ -98,34 +98,38 @@ void Graph::getOptParameters(double **cam_param, double **point_param)
     {
         cam = cam_param[cam_id];
         mLocalFrameVec[cam_id].getMutable(cam);
-//        mpFrameVec[cam_id]->getMutable(cam);
     }
     for(int point_id = 0; point_id < point_size; point_id++)
     {
         point = point_param[point_id];
         mLocalPointVec[point_id].getMutable(point);
-//        mpPointVec[point_id]->getMutable(point);
 
     }
 }
 
-void Graph::update(double **cam_param, double **point_param)
+void Graph::updateLocal(double **cam_param, double **point_param)
 {
     for(int i = 0; i < mpFrameVec.size(); i++)
     {
         double* cam = cam_param[i];
         double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
         norm = sqrt(norm);
-        std::cout<<Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm)<<std::endl;
-        Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
-        mLocalFrameVec[i].setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
-//        mpFrameVec[i]->setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        if(norm==0)
+        {
+            Eigen::AngleAxisd axisAngle(0,Eigen::Vector3d(0,0,0));
+            mLocalFrameVec[i].setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        }
+        else
+        {
+            Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
+            mLocalFrameVec[i].setAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        }
+
     }
     for(int i = 0; i < mpPointVec.size(); i++)
     {
         double* point = point_param[i];
         mLocalPointVec[i].setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
-//        mpPointVec[i]->setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
     }
 }
 
@@ -200,8 +204,10 @@ void Graph::splitInto(unsigned int num_subgraphs)
         }
         pSubgraph->addPoints();
         pSubgraph->addEdges();
+        pSubgraph->mGraphIndex = subgraph_id;
         pSubgraph->alignToBaseFrame();
     }
+
 
     findSeparatorPoints();
 }
@@ -259,11 +265,9 @@ void Graph::alignToBaseFrame()
     }
     for(int i = 0; i<mpPointVec.size(); i++)
     {
-//        Point localPoint = *mpPointVec[i];
-//        Eigen::Vector3d localPose = Tc0w_affine * localPoint.getPoseInWorld();
-//        localPoint.setPoint(localPose);
-          Point localPoint = *mpPointVec[i]->getpMirrorPointWithAffine3d(Tc0w_affine);
-          mLocalPointVec.push_back(localPoint);
+        auto pPoint = mpPointVec[i]->getpMirrorPointWithAffine3d(Tc0w_affine,mGraphIndex);
+
+        mLocalPointVec.push_back(*pPoint);
     }
 
 }
@@ -319,7 +323,6 @@ const std::list<size_t> Graph::getTrackedPointIndexes()
 
 void Graph::findSeparatorPoints()
 {
-    //todo
     std::list<size_t> result_list;
     for(int i = 0;i<mpChildGraphVec.size()-1;i++)
     {
@@ -334,6 +337,180 @@ void Graph::findSeparatorPoints()
             result_list.insert(result_list.end(),intersect_list.begin(),intersect_list.end());
         }
     }
+    for(auto global_point_id : result_list)
+    {
+        mpSeparatorPointVec.push_back(mpGlobalIndexedPoints[global_point_id]);
+    }
+}
+
+Graph::Ptr Graph::getParent() const
+{
+    return mpParentGraph;
+}
+std::vector<Graph::Ptr> Graph::getChildren() const
+{
+    return mpChildGraphVec;
+}
+std::vector<Point*> Graph::getpSeparators() const
+{
+    return mpSeparatorPointVec;
+}
+
+void Graph::getInterGraphOptParameters(double** cam_param, double** point_param)
+{
+    int cam_size = mpChildGraphVec.size();
+    int point_size = mpSeparatorPointVec.size();
+
+    double* cam;
+    double* point;
+    for(int cam_id = 0; cam_id < cam_size; cam_id++)
+    {
+        cam = cam_param[cam_id];
+        mpChildGraphVec[cam_id]->getBaseFrame().getMutable(cam);
+    }
+    for(int point_id = 0; point_id < point_size; point_id++)
+    {
+        point = point_param[point_id];
+        mpSeparatorPointVec[point_id]->getMutable(point);
+    }
+}
+
+Frame Graph::getBaseFrame()
+{
+    if(!mLocalFrameVec.empty())
+    {
+        auto baseFrame = mLocalFrameVec[0];
+        //base frame must be transformed back to global coordinate
+        auto global_id = baseFrame.mGlobalIndex;
+        auto Tc0w = mpGlobalIndexedFrames[global_id]->getConstTcw();
+        
+
+        auto Tc0_w = Tc0_c0 * Tc0w;
+        Eigen::Affine3d Tc0_w_affine;
+        Tc0_w_affine.matrix() = Tc0_w;
+        baseFrame.setFromAffine3d(Tc0_w_affine);
+//        return baseFrame;
+        return *mpGlobalIndexedFrames[global_id];//todo
+    }
+
+}
+
+void Graph::addInterObservations()
+{
+    size_t point_id = 0;
+    for(auto pPoint : mpSeparatorPointVec)
+    {
+        for(auto pIndexedLocalPoint : pPoint->mpLocalMirrorPoints)
+        {
+            size_t graph_id = pIndexedLocalPoint.first;
+            auto obs = pIndexedLocalPoint.second->getPoseInWorld();// actually returns the pose relative to base node--inter-measurement
+            mInterObservations.emplace(std::make_pair(graph_id,point_id),obs);
+        }
+        point_id++;
+    }
+}
+
+size_t Graph::getSupGraphSize()
+{
+    return mpChildGraphVec.size();
+}
+
+size_t Graph::getSeparatorSize()
+{
+    return mpSeparatorPointVec.size();
+}
+
+const std::map<Graph::pair,Eigen::Vector3d> Graph::getInterObservations()
+{
+    return mInterObservations;
+}
+
+void Graph::updateGlobal(double **cam_param, double **point_param)
+{
+    for(int i = 0; i < mpChildGraphVec.size(); i++)
+    {
+        double* cam = cam_param[i];
+        double norm = cam[0]*cam[0] + cam[1]*cam[1] + cam[2]*cam[2];
+        norm = sqrt(norm);
+        auto pSubGraph = mpChildGraphVec[i];
+        if(norm==0)
+        {
+            Eigen::AngleAxisd axisAngle(0,Eigen::Vector3d(0,0,0));
+            pSubGraph->setBaseFramePoseByAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        }
+        else
+        {
+            Eigen::AngleAxisd axisAngle(norm,Eigen::Vector3d(cam[0]/norm,cam[1]/norm,cam[2]/norm));
+            pSubGraph->setBaseFramePoseByAngleAxisAndPoint(axisAngle,Eigen::Vector3d(cam[3],cam[4],cam[5]));
+        }
+
+    }
+    for(int i = 0; i < mpPointVec.size(); i++)
+    {
+        double* point = point_param[i];
+        mpSeparatorPointVec[i]->setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
+    }
+}
+
+void Graph::applyLocal()
+{
+    Frame baseFrame;
+    if(mpFrameVec.empty())
+    {
+        std::cout<<"mpFrameVec empty\n";
+        return;
+    }
+    baseFrame = mLocalFrameVec[0];
+    auto Twc0 = mpFrameVec[0]->getConstTwc();
+    auto Tc0w = mpFrameVec[0]->getConstTcw();
+    auto Tc0_c0 = baseFrame.getConstTcw(); //c0_ represents the changed camera c0'
+    auto Tc0c0_ = baseFrame.getConstTwc();
+
+    Twc0 = Twc0 * Tc0c0_;
+    Tc0w = Tc0_c0 * Tc0w;
+    Eigen::Affine3d Tc0w_affine;
+    Eigen::Affine3d Twc0_affine;
+    Tc0w_affine.matrix() = Tc0w;
+    Twc0_affine.matrix() = Twc0;
+
+    mpFrameVec[0]->setFromAffine3d(Tc0w_affine);
+    for(int i = 1; i < mpFrameVec.size(); i++)
+    {
+        Frame localFrame = mLocalFrameVec[i];
+        auto Tcic0 = localFrame.getConstTcw();
+        Eigen::Affine3d Tciw;
+
+        Tciw = Tcic0 * Tc0w;
+        mpFrameVec[i]->setFromAffine3d(Tciw);
+    }
+    for(int i = 0; i<mpPointVec.size(); i++)
+    {
+        auto point = mLocalPointVec[i];//todo not update separators
+        auto c0P = point.getPoseInWorld(); // pose relative to base node
+        auto wP = Twc0_affine * c0P;
+        mpPointVec[i]->setPoint(wP);
+    }
+}
+
+void Graph::applyGlobal()
+{
+    for(auto pSubGraph : mpChildGraphVec)
+    {
+        pSubGraph->applyLocal();
+    }
+}
+
+void Graph::setBaseFramePoseByAngleAxisAndPoint(Eigen::AngleAxisd angleAxis, Eigen::Vector3d point)
+{
+    Eigen::Affine3d I;
+    I.matrix() = Eigen::Matrix4d::Identity();
+    mLocalFrameVec[0].setFromAffine3d(I);
+//    auto R = angleAxis.inverse().matrix();
+//    point = R*point;
+//    point = -point;
+//    mpFrameVec[0]->setAngleAxisAndPoint(angleAxis.inverse(),point);
+
+    mpFrameVec[0]->setAngleAxisAndPoint(angleAxis,point);
 }
 
 Graph* Graph::mpRootGraph;

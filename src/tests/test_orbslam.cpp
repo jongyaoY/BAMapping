@@ -110,36 +110,6 @@ int main(int argc, char **argv)
     cout << "median tracking time: " << vTimesTrack[nImages/2] << endl;
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
-//    FILE* obs_file;
-//    obs_file = fopen("obs.txt","w");
-//    auto pMPoints = SLAM.GetTrackedMapPoints();
-//    int id = 0;
-//    for(auto pMPoint : pMPoints)
-//    {
-//
-//        if(pMPoint == NULL)
-//            continue;
-//        if(pMPoint->isBad())
-//            continue;
-//        auto observations = pMPoint->GetObservations();
-//        for(auto observation : observations)
-//        {
-//            auto pKF = observation.first;
-//            if(pKF->isBad())
-//                continue;
-//            auto pKeyPoint = pKF->mvKeysUn[observation.second];
-//            int KF_id = pKF->mnFrameId;
-//            double u,v;
-//            u = pKeyPoint.pt.x;
-//            v = pKeyPoint.pt.y;
-//            fprintf(obs_file,"%d %d %lf %lf\n",id,KF_id,u,v);
-//        }
-//
-//        id++;
-//
-//    }
-//    fclose(obs_file);
-
     // Save camera trajectory
     SLAM.SaveTrajectoryTUM("CameraTrajectory.txt");
     SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");

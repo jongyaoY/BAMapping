@@ -25,14 +25,15 @@ namespace BAMapping
         size_t getObservationSize();
         std::map<size_t,Eigen::Vector3d> getObservations();
 
-        Point* getpMirrorPointWithAffine3d(Eigen::Affine3d Tcw);
+        Point* getpMirrorPointWithAffine3d(Eigen::Affine3d Tcw, size_t graphId);
         void getMutable(double* param);
         const Eigen::Vector3d getPoseInWorld();
         const Eigen::Vector3d getPoseInFrame(const Eigen::Matrix4d Tcw);
 
         size_t mGlobalIndex;
         Point* mpOriginPoint;
-        std::vector<Point*> mpLocalMirrorPoints;
+        std::map<size_t ,Point*> mpLocalMirrorPoints; //indexed by graph id of the graph it belongs to
+        size_t mRefGraphId;
     private:
         Eigen::Vector3d mPose;//global pose
         std::map<size_t,Eigen::Vector3d> mObservations;

@@ -4,7 +4,7 @@ Viewer::Viewer()
 {
     mKeyFrameSize = 0.05;
     mKeyFrameLineWidth = 1;
-    mPointSize = 1;
+    mPointSize = 0.01;
 
     mFrameColor[0] = 0.;
     mFrameColor[1] = 0.;

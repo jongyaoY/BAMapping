@@ -17,11 +17,6 @@ Eigen::Matrix4d Converter::AngleAxisPointToTcw(const Eigen::AngleAxisd angleAxis
     t = point;
     setRotToMatrix4d(R,Tcw);
     setTransToMatrix4d(t,Tcw);
-//    Tcw.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
-//            R(1,0),R(1,1),R(1,2),
-//            R(2,0),R(2,1),R(2,2);
-//    Tcw.topRightCorner(3,1)<<t[0],t[1],t[2];
-//    Tcw(3,3) = 1;
     return Tcw;
 }
 
@@ -36,10 +31,6 @@ Eigen::Matrix4d Converter::AngleAxisPointToTwc(const Eigen::AngleAxisd angleAxis
     t*=-1;
     setRotToMatrix4d(R,Twc);
     setTransToMatrix4d(t,Twc);
-//    Twc.topLeftCorner(3,3)<<R(0,0),R(0,1),R(0,2),
-//            R(1,0),R(1,1),R(1,2),
-//            R(2,0),R(2,1),R(2,2);
-//    Twc.topRightCorner(3,1)<<t[0],t[1],t[2];
     return Twc;
 
 }

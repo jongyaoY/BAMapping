@@ -25,7 +25,7 @@ int main(int argc, char** argv)
                           "../dataset_local/ITE_dataset/ITE.yaml");
     Reader::readITEPoints(&graph,"../dataset_local/ITE_dataset/points.txt");
     viewer.setRefPoints(graph.getConstPoints());
-    subGraph = graph.getSubGraph(130,271);
+    subGraph = graph.getSubGraph(500,1000);
     BundleAdjuster::solve(&subGraph);
 
     viewer.setFrames(subGraph.getConstFrames());
