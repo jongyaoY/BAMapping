@@ -30,6 +30,7 @@ void Graph::addPoints()
 {
     mTrackedPointIndexes.sort();
     mTrackedPointIndexes.unique();
+    mpPointVec.clear();
     for(auto global_point_index : mTrackedPointIndexes)
     {
         mpPointVec.push_back(mpGlobalIndexedPoints[global_point_index]);
@@ -162,7 +163,8 @@ void Graph::addGlobalFrame(Frame frame)
 {
     Frame* pFrame = new Frame(frame);
     auto observations = pFrame->getObservations();
-
+    if(observations.empty())
+        return;
     size_t global_frame_id = mpGlobalIndexedFrames.size();
     pFrame->mGlobalIndex = global_frame_id;
 
@@ -202,12 +204,18 @@ void Graph::splitInto(unsigned int num_subgraphs)
         {
             pSubgraph->addFrame(mpFrameVec[frame_id]);
         }
+        if(subgraph_id == num_subgraphs-1)
+        {
+            for(;frame_id < mpFrameVec.size();frame_id++)
+            {
+                pSubgraph->addFrame(mpFrameVec[frame_id]);
+            }
+        }
         pSubgraph->addPoints();
         pSubgraph->addEdges();
         pSubgraph->mGraphIndex = subgraph_id;
         pSubgraph->alignToBaseFrame();
     }
-
 
     findSeparatorPoints();
 }
@@ -272,6 +280,44 @@ void Graph::alignToBaseFrame()
 
 }
 
+void Graph::updateSeparatorsToLocal()
+{
+    size_t localIndex = 0;
+    mSeparatorLocalIndexes.clear();
+    for(auto& point : mLocalPointVec)
+    {
+        auto originpPoint = point.mpOriginPoint;
+        if(originpPoint->mpLocalMirrorPoints.size()>1) //is separator
+        {
+            mSeparatorLocalIndexes.push_back(localIndex);
+            for(auto pMirrorPoint : originpPoint->mpLocalMirrorPoints)
+            {
+                if(pMirrorPoint.first == mGraphIndex) //choose the mirror point that belongs to this subgraph
+                {
+                    auto pPoint = pMirrorPoint.second;
+                    auto wP = originpPoint->getPoseInWorld();
+                    auto baseFrame = getBaseFrame();
+                    auto Tc0w = baseFrame.getConstTcw();
+                    Eigen::Affine3d Tc0w_affine;
+                    Tc0w_affine.matrix() = Tc0w;
+                    auto c0P = Tc0w_affine * wP;
+
+                    pPoint->setPoint(c0P); //update mirror point
+                    point.setPoint(c0P); //update local mirror point
+                }
+            }
+        }
+        else
+        {
+            continue;
+        }
+        localIndex++;
+    }
+}
+std::vector<size_t> Graph::getSeparatorLocalIndexes()
+{
+    return mSeparatorLocalIndexes;
+}
 void Graph::trimPointsAndEdges(unsigned int threshold)
 {
     auto it = mpPointVec.begin();
@@ -287,6 +333,7 @@ void Graph::trimPointsAndEdges(unsigned int threshold)
 
 void Graph::addEdges()
 {
+    mEdges.clear();
     size_t point_id = 0;
     for(auto pPoint: mpPointVec)
     {
@@ -485,7 +532,9 @@ void Graph::applyLocal()
     }
     for(int i = 0; i<mpPointVec.size(); i++)
     {
-        auto point = mLocalPointVec[i];//todo not update separators
+        auto point = mLocalPointVec[i];
+        if(point.mpOriginPoint->mpLocalMirrorPoints.size()>1) //not update separators
+            continue;
         auto c0P = point.getPoseInWorld(); // pose relative to base node
         auto wP = Twc0_affine * c0P;
         mpPointVec[i]->setPoint(wP);

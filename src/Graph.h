@@ -55,10 +55,12 @@ namespace BAMapping
         size_t getSeparatorSize();
         size_t getFrameBlockSize();
         size_t getPointBlockSize();
+        std::vector<size_t> getSeparatorLocalIndexes();
         const std::map<pair,Eigen::Vector3d> getEdges();
         const std::map<pair,Eigen::Vector3d> getInterObservations();
         void updateLocal(double** cam_param,double** point_param);
         void updateGlobal(double** cam_param,double** point_param);
+        void updateSeparatorsToLocal();
         void applyLocal();
         void applyGlobal();
 
@@ -85,6 +87,7 @@ namespace BAMapping
 //        (frame_id , point_id) -> observation
         FrameVector mLocalFrameVec;
         PointVector mLocalPointVec;
+        std::vector<size_t> mSeparatorLocalIndexes;
         std::map<pair,Eigen::Vector3d> mEdges;
         std::map<pair,Eigen::Vector3d> mInterObservations;
     private:
