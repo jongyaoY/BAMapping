@@ -383,14 +383,14 @@ Frame Graph::getBaseFrame()
         //base frame must be transformed back to global coordinate
         auto global_id = baseFrame.mGlobalIndex;
         auto Tc0w = mpGlobalIndexedFrames[global_id]->getConstTcw();
-        
+        auto Tc0_c0 = baseFrame.getConstTcw();
 
         auto Tc0_w = Tc0_c0 * Tc0w;
         Eigen::Affine3d Tc0_w_affine;
         Tc0_w_affine.matrix() = Tc0_w;
         baseFrame.setFromAffine3d(Tc0_w_affine);
-//        return baseFrame;
-        return *mpGlobalIndexedFrames[global_id];//todo
+        return baseFrame;
+
     }
 
 }
@@ -445,7 +445,7 @@ void Graph::updateGlobal(double **cam_param, double **point_param)
         }
 
     }
-    for(int i = 0; i < mpPointVec.size(); i++)
+    for(int i = 0; i < mpSeparatorPointVec.size(); i++)
     {
         double* point = point_param[i];
         mpSeparatorPointVec[i]->setPoint(Eigen::Vector3d(point[0],point[1],point[2]));
