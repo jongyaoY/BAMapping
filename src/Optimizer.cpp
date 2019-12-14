@@ -8,7 +8,7 @@
 using namespace BAMapping;
 using namespace ceres;
 
-void Optimizer::localGraphOptimize(Graph *pLocalGraph)
+void Optimizer::localGraphOptimize(Graph *pLocalGraph, bool fixBaseAndSep)
 {
     Problem problem;
     Solver::Options options;
@@ -30,20 +30,20 @@ void Optimizer::localGraphOptimize(Graph *pLocalGraph)
         point_param[i] = new double[pointBlock_size];
     }
 
-    builProblem(pLocalGraph,&problem,cam_param,point_param);
+    builProblem(pLocalGraph,&problem,cam_param,point_param,fixBaseAndSep);
     SetMinimizerOptions(&options);
     SetLinearSolver(&options);
-    options.minimizer_progress_to_stdout = false;
+//    options.minimizer_progress_to_stdout = false;
 
 
     Solver::Summary summary;
     Solve(options, &problem, &summary);
     pLocalGraph->updateLocal(cam_param,point_param);
 
-//    std::cout << summary.FullReport() << "\n";
+    std::cout << summary.FullReport() << "\n";
 }
 
-void Optimizer::builProblem(Graph* pGraph, Problem* problem,double** cam_param,double** point_param)
+void Optimizer::builProblem(Graph* pGraph, Problem* problem,double** cam_param,double** point_param,bool fixBaseAndSep)
 {
 
     int camera_size = pGraph->getFrameVectorSize();
@@ -69,7 +69,18 @@ void Optimizer::builProblem(Graph* pGraph, Problem* problem,double** cam_param,d
         cost_function = AlignmentError_3D::Create(observation[0], observation[1], observation[2]);
 
         problem->AddResidualBlock(cost_function, loss_function, cam_param[cam_id], point_param[point_id]);
+//        cost_function = ReprojectionError_2D::Create(observation[0], observation[1]);
 
+    }
+    if(fixBaseAndSep)
+    {
+
+        problem->SetParameterBlockConstant(cam_param[0]);
+        auto fixedPointIndexes = pGraph->getSeparatorLocalIndexes();
+        for(auto point_id : fixedPointIndexes)
+        {
+            problem->SetParameterBlockConstant(point_param[point_id]);
+        }
     }
 }
 
@@ -110,6 +121,7 @@ void Optimizer::init(std::string configFile)
     double cx = parser.getValue<double>("Camera.cx");
     double cy = parser.getValue<double>("Camera.cy");
     AlignmentError_3D::setIntrinsics(fx,fy,cx,cy);
+    ReprojectionError_2D::setIntrinsics(fx,fy,cx,cy);
 }
 
 void Optimizer::interGraphOptimize(Graph *pGraph)
@@ -179,16 +191,26 @@ void Optimizer::optimize(Graph *pGraph, size_t submapSize)
 {
     pGraph->splitInto(submapSize);
     auto subMaps = pGraph->getSubmaps();
-
+    //local optimazation
     for(auto subMap : subMaps)
     {
         static int i = 0;
         i++;
         std::cout<<"optimizing subgraph: "<<i<<std::endl;
-        localGraphOptimize(subMap.get());
+        localGraphOptimize(subMap.get(), false);
 
     }
+    //inter-graph optimization
     pGraph->addInterObservations();
     interGraphOptimize(pGraph);
-    pGraph->applyGlobal();//todo
+    //local optimazation with fixed separators and base frames
+    for(auto subMap : subMaps)
+    {
+        subMap->updateSeparatorsToLocal();
+        static int i = 0;
+        i++;
+        std::cout<<"optimizing subgraph: "<<i<<std::endl;
+        localGraphOptimize(subMap.get(),true);
+    }
+    pGraph->applyGlobal();
 }
