@@ -37,7 +37,7 @@ void Optimizer::localGraphOptimize(Graph *pLocalGraph)
 
 
     Solver::Summary summary;
-//    Solve(options, &problem, &summary);
+    Solve(options, &problem, &summary);
     pLocalGraph->updateLocal(cam_param,point_param);
 
 //    std::cout << summary.FullReport() << "\n";
@@ -166,11 +166,11 @@ Optimizer::buildProblemInterGraph(Graph *pGraph, ceres::Problem *problem, double
         }
 
         CostFunction* cost_function;
-        LossFunction* loss_function = new ceres::CauchyLoss(1.0);//new HuberLoss(3.0);
+//        LossFunction* loss_function = new ceres::CauchyLoss(1.0);//new HuberLoss(3.0);
 
-        cost_function = AlignmentError_3D::Create(observation[0], observation[1], observation[2]);
+        cost_function = AlignmentError_3D_Direct::Create(observation[0], observation[1], observation[2]);
 
-        problem->AddResidualBlock(cost_function, loss_function, cam_param[cam_id], point_param[point_id]);
+        problem->AddResidualBlock(cost_function, NULL, cam_param[cam_id], point_param[point_id]);
 
     }
 }
@@ -190,5 +190,5 @@ void Optimizer::optimize(Graph *pGraph, size_t submapSize)
     }
     pGraph->addInterObservations();
     interGraphOptimize(pGraph);
-//    pGraph->applyGlobal();//todo
+    pGraph->applyGlobal();//todo
 }
