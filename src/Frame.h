@@ -10,8 +10,11 @@
 #include <memory>
 #include <Eigen/Geometry>
 #include <list>
+#include <set>
+
 
 #include "util/Converter.h"
+#include "util/Parser.h"
 namespace BAMapping
 {
     class Frame
@@ -20,7 +23,6 @@ namespace BAMapping
         typedef std::shared_ptr<Frame> Ptr;
 
         Frame() = default;
-
         void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
         void setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d point);
         void setFromAffine3d(const Eigen::Affine3d Tcw);
@@ -74,7 +76,52 @@ namespace BAMapping
     };
     typedef std::vector<Frame> FrameVector;
     typedef std::vector<Frame*> FramePtrVector;
-//    typedef std::vector<Frame*> FramePtrVector;
+
+    namespace FrameMethods
+    {
+        static FrameVector filterFrames(const char* config_file, const FrameVector& in_frameVector)
+        {
+
+            Parser config(config_file);
+            FrameVector out_frameVector;
+            if(in_frameVector.empty())
+                return out_frameVector;
+
+            auto n_key_points_thres = config.getValue<int>("Frame.n_key_points_thres");
+            auto tracked_key_points_percentage_thres = config.getValue<double>("Frame.tracked_key_points_percentage_thres");
+
+            Frame ref_frame;
+            for(auto frame : in_frameVector)
+            {
+                if(!frame.getObservedPointsIds().empty())
+                {
+                    ref_frame = frame;
+                    break;
+                }
+            }
+            for(auto frame : in_frameVector)
+            {
+                auto ref_tracked_points = ref_frame.getObservedPointsIds();
+                auto tracked_points = frame.getObservedPointsIds();
+                if(tracked_points.empty())
+                    continue;
+
+                ref_tracked_points.sort();
+                tracked_points.sort();
+                std::set<int> intersect;
+                std::set_intersection(ref_tracked_points.begin(),ref_tracked_points.end(),tracked_points.begin(),tracked_points.end(),
+                                      std::inserter(intersect,intersect.begin()));
+                double percentage = (double) intersect.size()/(double) ref_tracked_points.size();
+                if(percentage <  tracked_key_points_percentage_thres)
+                {
+                    ref_frame = frame;
+                    out_frameVector.push_back(frame);
+                }
+            }
+
+            return out_frameVector;
+        }
+    }
 
 }//end of namespace
 

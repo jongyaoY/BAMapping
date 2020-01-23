@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include "Frame.h"
-
 using namespace BAMapping;
 
 void Frame::getMutable(double* param)
@@ -109,6 +108,39 @@ void Frame::setFromAffine3d(Eigen::Affine3d Tcw)
 {
     Converter::Affine3dTcwToAngleAxisAndPoint(Tcw,m_angleAxis,m_translation);
 }
+
+//FrameVector FrameMethods::filterFrames(const char *config_file, const FrameVector &in_frameVector)
+//{
+//
+//    Parser config(config_file);
+//    FrameVector out_frameVector;
+//    if(in_frameVector.empty())
+//        return out_frameVector;
+//
+//    auto n_key_points_thres = config.getValue<int>("Frame.n_key_points_thres");
+//    auto tracked_key_points_percentage_thres = config.getValue<double>("Frame.tracked_key_points_percentage_thres");
+//
+//    auto ref_frame = in_frameVector[0];
+//    for(auto frame : in_frameVector)
+//    {
+//        auto ref_tracked_points = ref_frame.getObservedPointsIds();
+//        auto tracked_points = frame.getObservedPointsIds();
+//        ref_tracked_points.sort();
+//        tracked_points.sort();
+//        std::set<int> intersect;
+//        std::set_intersection(ref_tracked_points.begin(),ref_tracked_points.end(),tracked_points.begin(),tracked_points.end(),
+//                        std::inserter(intersect,intersect.begin()));
+//        double percentage = (double) intersect.size()/(double) ref_tracked_points.size();
+//        if(tracked_points.size() > n_key_points_thres
+//        &&percentage <  tracked_key_points_percentage_thres)
+//        {
+//            ref_frame = frame;
+//            out_frameVector.push_back(frame);
+//        }
+//    }
+//
+//    return out_frameVector;
+//}
 
 //intrisic parameters
 double Frame::m_fx;
