@@ -5,6 +5,14 @@
 
 #include "Parser.h"
 
+#include <utility>
+
+Parser::Parser(std::string filename)
+{
+    load(filename);
+}
+
+
 void Parser::load(std::string filename)
 {
     std::ifstream file(filename);
@@ -43,6 +51,37 @@ float Parser::getValue(std::string key)
         return (float) 0;
     }
 }
+
+std::string Parser::poseGraphName(size_t fragment_id)
+{
+    return "fragments/fragment"+std::to_string(fragment_id)+".json";
+}
+
+std::string Parser::plyFileName(size_t fragment_id)
+{
+    return "fragments/fragment"+std::to_string(fragment_id)+".ply";
+}
+
+std::string Parser::globalPoseGraphName()
+{
+    return "fragments/global.json";
+}
+
+std::string Parser::globalPoseGraphOptName()
+{
+    return "fragments/global_optimized.json";
+}
+
+std::string Parser::globalPoseGraphOptRefinedName()
+{
+    return "fragments/global_optimized_refined.json";
+}
+
+std::string Parser::FianalPlyName()
+{
+    return "fragments/final.ply";
+}
+
 
 template<>
 double Parser::getValue(std::string key)

@@ -1,51 +1,41 @@
 //
 // Created by jojo on 07.12.19.
 //
+//#define Debug_Local_map
 #include "../io/Reader.h"
 #include "../Graph.h"
 #include "../Viewer.h"
-#include "../Optimizer.h"
+#include "../BundleAdjuster.h"
 #include "../Integrater.h"
 
 int main(int argc, char** argv)
 {
+    using namespace BAMapping;
+    auto frameVec = io::Reader::readITEFrames("../dataset/ITE_Long/cameras.txt",
+                                              "../dataset/ITE_Long/observations.txt",
+                                              "../dataset/ITE_Long/",1);
+    auto pointVec = io::Reader::readPoints("../dataset/ITE_Long/points.txt");
 
-    BAMapping::Graph graph;
-    BAMapping::io::Reader::readITEData(&graph,"../dataset_local/ITE_dataset/cameras.txt",
-                            "../dataset_local/ITE_dataset/observations.txt",
-                            "../dataset_local/ITE_dataset/points.txt",
-                            "../dataset_local/ITE_dataset/",
-                            "../dataset_local/ITE_dataset/ITE.yaml");
-    BAMapping::Graph::setAsRootGraph(&graph);
-    BAMapping::Viewer viewer;
-//    graph.splitInto(50);
+    const char* config_file = "../dataset/ITE_Long/ITE.yaml";
+    const char* mesh_file = "final.ply";
+//    auto refPoint = pointVec;
+//    frameVec.erase(frameVec.begin(),frameVec.begin() + 200);
+//    frameVec.erase(frameVec.begin()+200, frameVec.end());
 
-//    int section = std::stoi(argv[1]);
+    Graph graph;
 
-    BAMapping::Optimizer::init("../dataset_local/ITE_dataset/ITE.yaml");
-    BAMapping::Optimizer::optimize(&graph,50);
-//    BAMapping::Optimizer::localGraphOptimize(submaps[section].get());
+    graph.setGraph(frameVec,pointVec);
 
+    BundleAdjuster::optimize(graph, "../dataset/ITE_Long/ITE.yaml");
+    auto refPoint = graph.copyPoints(frameVec.front().getConstTwc());
+    auto frames = graph.copyFrames(frameVec.front().getConstTwc());
+//
+//
+//    Viewer viewer;
+//    viewer.setFrames(frames);
+//    viewer.setPoints(pointVec);
+//    viewer.setRefPoints(refPoint);
+//    viewer.visualize();
 
-//    viewer.setFrames(submaps[section]->getLocalConstFrames());
-//    viewer.setPoints(submaps[section]->getLocalConstPoints());
-
-    viewer.setFrames(graph.getConstGlobalFrames());
-    viewer.setPoints(graph.getConstGlobalPoints());
-    viewer.visualize();
-
-    Integrater integrater;
-    integrater.init("../dataset_local/ITE_dataset/ITE.yaml");
-    auto submaps = graph.getSubmaps();
-
-    int i = 0;
-    for(auto frame : submaps[0]->getLocalConstFrames())
-    {
-        printf("%i\n",i+1);
-
-        integrater.integrateFrame(frame);
-        i++;
-    }
-
-    integrater.generateMesh(true);
+    Integrater::integrateGraph(graph,config_file,mesh_file,frameVec.front().getConstTwc());
 }

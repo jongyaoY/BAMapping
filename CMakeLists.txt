@@ -66,26 +66,22 @@ link_directories(${Open3D_LIBRARY_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/libs/orbslam_lib/include)
 
 add_library(${PROJECT_NAME} SHARED
-            src/util/Optimize.cpp
-            src/util/Frame.cpp
-            src/util/Point.cpp
-            src/util/Graph.cpp
-            src/util/BundleAdjuster.cpp
-            src/util/bal_problem.cpp
             src/util/Parser.cpp
             src/Viewer.cpp
-            src/Reader.cpp
-            src/Writer.cpp
+#            src/Reader.cpp
+#            src/Writer.cpp
             src/Integrater.cpp
 #new
             src/Graph.cpp
             src/Graph.h
             src/Frame.cpp
             src/Point.cpp
-            src/Optimizer.cpp
+            src/BundleAdjuster.cpp
             src/Error.h
             src/io/Reader.cpp
-            src/io/Parser.cpp src/util/Converter.cpp src/util/Converter.h)
+#            src/io/Parser.cpp
+            src/util/Converter.cpp
+            src/util/Converter.h)
 #add_library(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}
                                  ceres
@@ -96,29 +92,25 @@ target_link_libraries(${PROJECT_NAME}
 #                                 ${OpenCV_LIBS}
                         )
 
-add_executable(System src/System.cpp)
+#add_executable(System src/System.cpp)
+#
+#target_link_libraries(System ${PROJECT_NAME})
 
-target_link_libraries(System ${PROJECT_NAME})
-
-add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
-
-target_link_libraries(test_bundleAdjuster ${PROJECT_NAME}
-                                        ${Open3D_LIBRARIES})
-
-add_executable(test_TSDF_fusion src/tests/test_TSDF_fusion.cpp)
-target_link_libraries(test_TSDF_fusion ${Open3D_LIBRARIES}
-                                       ${PROJECT_NAME})
-
-add_executable(test_orbslam src/tests/test_orbslam.cpp)
-target_link_libraries(test_orbslam  ${PROJECT_SOURCE_DIR}/libs/orbslam_lib/lib/libORB_SLAM2.so
-                                    ${OpenCV_LIBS}
-                                    ${Pangolin_LIBRARIES}
-                                    )
+#add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
+#
+#target_link_libraries(test_bundleAdjuster ${PROJECT_NAME}
+#                                        ${Open3D_LIBRARIES})
 
 
-add_executable(test_TF src/tests/test_TF.cpp)
+#
+#add_executable(test_orbslam src/tests/test_orbslam.cpp)
+#target_link_libraries(test_orbslam  ${PROJECT_SOURCE_DIR}/libs/orbslam_lib/lib/libORB_SLAM2.so
+#                                    ${OpenCV_LIBS}
+#                                    ${Pangolin_LIBRARIES}
+#                                    )
 
-target_link_libraries(test_TF ${PROJECT_NAME})
+
+
 
 add_executable(test_Submap src/tests/test_Submap.cpp)
 

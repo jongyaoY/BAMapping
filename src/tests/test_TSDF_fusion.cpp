@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     FrameVector frames;
     Graph graph;
     //tum
-    Reader::readTUMFrames(frames,"../dataset_local/fr1desk/","fr1_desk.txt","CameraTrajectory.txt");
+    Reader::readTUMFrames(frames,"../dataset_local/fr1desk/","fr1_desk.txt","camera.txt");
     integrater.init("../dataset_local/fr1desk/TUM1.yaml");
     int i = 0;
 

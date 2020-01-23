@@ -79,28 +79,33 @@ struct AlignmentError_3D
         T p_obs[3];
         ceres::AngleAxisRotatePoint(camera, point, p);
 
+
         // camera[3,4,5] are the translation.
         p[0] += camera[3];
         p[1] += camera[4];
         p[2] += camera[5];
 
-        p_obs[0] = (T) (u-cx_)*d/fx_;
-        p_obs[1] = (T) (v-cy_)*d/fy_;
-        p_obs[2] = (T) d;
+        p_obs[0] = T((u-cx_)*d/fx_);
+        p_obs[1] = T((v-cy_)*d/fy_);
+        p_obs[2] = T(d);
 
-        if(d<=(T) 3.0)
-        {
-            residuals[0] = p[0] - p_obs[0];
-            residuals[1] = p[1] - p_obs[1];
-            residuals[2] = p[2] - p_obs[2];
-        }
-        else
-        {
-            residuals[0] = (T) 0.;
-            residuals[1] = (T) 0.;
-            residuals[2] = (T) 0.;
+//        T weight[3];
+//        weight[0] = T(1.0/(d*d));
+//        weight[1] = T(1.0/(d*d));
+//        weight[2] = T(1.0/(d*d));
 
-        }
+        residuals[0] = (p[0] - p_obs[0]);
+        residuals[1] = (p[1] - p_obs[1]);
+        residuals[2] = (p[2] - p_obs[2]);
+
+        T norm = residuals[0]*residuals[0] + residuals[1]*residuals[1] + residuals[2]*residuals[2];
+//        if(sqrt(norm) > T(0.05))
+//        {
+////            printf("norm:%lf, %lf %lf %lf\n",norm,residuals[0],residuals[1],residuals[2]);
+//            residuals[0] = T(0);
+//            residuals[1] = T(0);
+//            residuals[2] = T(0);
+//        }
         return true;
     }
 
@@ -128,6 +133,75 @@ struct AlignmentError_3D
     static double cy_;
 };
 
+
+
+struct ReprojectionError_3D
+{
+    ReprojectionError_3D(double observed_u, double observed_v, double observed_d)
+            : u(observed_u), v(observed_v), d(observed_d) {}
+
+    template <typename T>
+    bool operator()(const T* const intrinsics,
+                    const T* const camera,
+                    const T* const point,
+                    T* residuals) const
+    {
+        T p[3];
+        T p_obs[3];
+//        double p_[3];
+//        double p_obs_[3];
+
+        ceres::AngleAxisRotatePoint(camera, point, p);
+
+
+        // camera[3,4,5] are the translation.
+        p[0] += camera[3];
+        p[1] += camera[4];
+        p[2] += camera[5];
+
+        const T& fx_ = intrinsics[0];
+        const T& fy_ = intrinsics[1];
+        const T& cx_ = intrinsics[2];
+        const T& cy_ = intrinsics[3];
+
+        const T& u_ = T (u);
+        const T& v_ = T (v);
+        const T& d_ = T (d);
+
+        p_obs[0] = (u_-cx_)*d_/fx_;
+        p_obs[1] = (v_-cy_)*d_/fy_;
+        p_obs[2] = d_;
+
+
+        residuals[0] = (p[0] - p_obs[0]);
+        residuals[1] = (p[1] - p_obs[1]);
+        residuals[2] = (p[2] - p_obs[2]);
+
+        T norm = residuals[0]*residuals[0] + residuals[1]*residuals[1] + residuals[2]*residuals[2];
+
+//        printf("%lf %lf %lf, %lf %lf %lf\n",(double)p[0]);
+//        if(sqrt(norm) > T(0.08))
+//        {
+//            residuals[0] = T(0);
+//            residuals[1] = T(0);
+//            residuals[2] = T(0);
+//        }
+        return true;
+    }
+
+    static ceres::CostFunction* Create(const double observed_u,
+                                       const double observed_v,
+                                       const double observed_d) {
+        return (new ceres::AutoDiffCostFunction<ReprojectionError_3D, 3, 4, 6, 3>(
+                new ReprojectionError_3D(observed_u, observed_v,observed_d)));
+    }
+
+    double u;
+    double v;
+    double d;
+};
+
+
 struct AlignmentError_3D_Direct
 {
     AlignmentError_3D_Direct(double observed_x, double observed_y, double observed_z)
@@ -148,9 +222,9 @@ struct AlignmentError_3D_Direct
         p[1] += camera[4];
         p[2] += camera[5];
         //observed point
-        p_obs[0] = (T) x;
-        p_obs[1] = (T) y;
-        p_obs[2] = (T) z;
+        p_obs[0] = T(x);
+        p_obs[1] = T(y);
+        p_obs[2] = T(z);
 
 
         residuals[0] = p[0] - p_obs[0];

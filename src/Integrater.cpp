@@ -1,112 +1,214 @@
 #include "Integrater.h"
 #include "util/Parser.h"
 
+using namespace BAMapping;
+
 Integrater::Integrater()
 {
 
 }
-void Integrater::init(std::string strSettingPath)
+
+void Integrater::integrateGraph(const Graph &graph, const char *config_file, const char* plyFile_name, const Mat4 Twc0)
 {
-    Parser parser;
-    parser.load(strSettingPath);
-    int width = parser.getValue<int>("Camera.width");
-    int height = parser.getValue<int>("Camera.height");
-    double fx = parser.getValue<double>("Camera.fx");
-    double fy = parser.getValue<double>("Camera.fy");
-    double cx = parser.getValue<double>("Camera.cx");
-    double cy = parser.getValue<double>("Camera.cy");
-    mIntrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
-    mTSDF_param.tsdf_size = parser.getValue<float>("TSDF.size");
+    using namespace open3d;
+    Parser config(config_file);
 
-    mTSDF_param.tsdf_res = parser.getValue<float>("TSDF.resolution");
-    mTSDF_param.depth_factor = parser.getValue<double>("TSDF.depth_factor");
-    mTSDF_param.depth_truncate = parser.getValue<double>("TSDF.depth_truncate");
+    int every_n_frames = config.getValue<int>("Integrater.every_n_frames");
+    if(every_n_frames == 0)
+        every_n_frames = 1;
+    auto volume = createVolume(config);
 
-    mVolume_ptr.reset(
-            new open3d::integration::ScalableTSDFVolume
-            (mTSDF_param.tsdf_size/mTSDF_param.tsdf_res,
-             0.01*mTSDF_param.tsdf_size,
-             open3d::integration::TSDFVolumeColorType::RGB8)
-            );
+    for(int i = 0; i < graph.nodes_.size(); i++)
+    {
+        if(i % every_n_frames != 0)
+            continue;
 
+        printf("\r integrating: %d node", i);
+        fflush(stdout);
 
+        auto node = graph.nodes_[i];
+        Mat4 Tc0cn = node.pose_;
+        Mat4 Twcn = Twc0 * Tc0cn;
+        auto intrinsics = getIntrinsics(config);
+        Mat4 extrinsics = Twcn.inverse();
+
+        geometry::RGBDImage rgbd;
+        createRGBDImage(config, node.depth_path_.c_str(), node.rgb_path_.c_str(), rgbd, false);
+
+        volume->Integrate(rgbd,intrinsics,extrinsics);
+    }
+
+    io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());
+    visualization::DrawGeometries({volume->ExtractTriangleMesh()});
 
 }
 
-bool Integrater::integrateFrame(const Frame frame)
+void Integrater::integrate(Parser config, std::string poseGraphName, const FrameVector frameVector,const char* plyFile_name)
 {
     using namespace open3d;
-    geometry::Image color;
-    geometry::Image depth;
+    auto volume = createVolume(config);
+    registration::PoseGraph global_poseGraph;
+    io::ReadPoseGraph(poseGraphName,global_poseGraph);
 
-    io::ReadImage(frame.getRGBImagePath().c_str(), color);
-    io::ReadImage(frame.getDepthImagePath().c_str(), depth);
-    auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
-            color, depth, mTSDF_param.depth_factor,
-                          mTSDF_param.depth_truncate, false);
-
-    Eigen::Matrix4d extrinsic = Eigen::Matrix4d::Identity();
-
-//    auto pose = frame.getConstTwc();
-    auto pose = frame.getConstTcw();
-
-    extrinsic.topLeftCorner(3,3)<<pose(0,0),pose(0,1),pose(0,2),
-                                               pose(1,0),pose(1,1),pose(1,2),
-                                               pose(2,0),pose(2,1),pose(2,2);
-    extrinsic.topRightCorner(3,1)<<pose(0,3),pose(1,3),pose(2,3);
-    mVolume_ptr->Integrate(*rgbd,
-                     mIntrinsic,
-                     extrinsic);
+    for(size_t fragment_id = 0; fragment_id < global_poseGraph.nodes_.size(); fragment_id++) //global_poseGraph.nodes_.size()-1
+    {
+        auto Twc0 = global_poseGraph.nodes_[fragment_id].pose_;
+        integrateFragment(config,volume,fragment_id,frameVector,Twc0);//todo
+    }
+    io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());
+    visualization::DrawGeometries({volume->ExtractTriangleMesh()});
 }
 
-bool Integrater::integrateFrame(const BAMapping::Frame frame)
+
+
+Integrater::Volume Integrater::createVolume(Parser config)
 {
     using namespace open3d;
-    geometry::Image color;
+
+    double voxel_size = config.getValue<double>("Integrater.volume_size")/config.getValue<double>("Integrater.resolution");
+    double sdf_trunc = config.getValue<double>("Integrater.sdf_trunc");
+    bool color = config.getValue<bool>("Integrater.color");
+    integration::TSDFVolumeColorType type;
+    if(color)
+        type = integration::TSDFVolumeColorType::RGB8;
+    else
+        type = integration::TSDFVolumeColorType::Gray32;
+
+    Volume volume(new integration::ScalableTSDFVolume(voxel_size,sdf_trunc,type));
+
+    return volume;
+}
+
+void Integrater::integrateFragment(Parser config, Integrater::Volume volume, const size_t fragment_id,
+                                   const FrameVector frameVector, const Eigen::Matrix4d Twc0)
+{
+    using namespace open3d;
+
+
+    size_t n_frame_per_fragment = config.getValue<int>("n_frames_per_fragment");
+    size_t n_overlap = config.getValue<int>("n_overlap_frames");
+    size_t start_node_id;
+    size_t gap;
+
+    if(fragment_id == 0)
+    {
+        start_node_id = 0;
+        gap = 0;
+    }
+    else
+    {
+        start_node_id = n_overlap;
+        gap = n_frame_per_fragment - n_overlap;
+    }
+
+    FrameVector local_frameVec;
+    local_frameVec.insert(local_frameVec.end(),
+            frameVector.begin()+fragment_id*gap,
+                          std::min(frameVector.begin() + fragment_id*gap + n_frame_per_fragment,frameVector.end()));
+
+    registration::PoseGraph fragment_poseGraph;
+    io::ReadPoseGraph(Parser::poseGraphName(fragment_id),fragment_poseGraph);
+
+    for(size_t node_id = start_node_id; node_id < fragment_poseGraph.nodes_.size(); node_id++)
+    {
+        if(node_id%2 != 0) //every two frames todo
+            continue;
+
+        auto node = fragment_poseGraph.nodes_[node_id];
+        auto frame = local_frameVec[node_id];
+        auto Tc0cn = node.pose_;
+        auto pose = Twc0 * Tc0cn;
+        geometry::RGBDImage rgbd;
+        createRGBDImageFromFrame(frame,config,rgbd,false);
+
+
+        int width = config.getValue<int>("Camera.width");
+        int height = config.getValue<int>("Camera.height");
+        double fx = config.getValue<double>("Camera.fx");
+        double fy = config.getValue<double>("Camera.fy");
+        double cx = config.getValue<double>("Camera.cx");
+        double cy = config.getValue<double>("Camera.cy");
+
+        camera::PinholeCameraIntrinsic intrinsic;
+        intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+
+        volume->Integrate(rgbd,intrinsic,pose.inverse());
+
+    }
+
+}
+
+open3d::camera::PinholeCameraIntrinsic Integrater::getIntrinsics(Parser config)
+{
+    int width = config.getValue<int>("Camera.width");
+    int height = config.getValue<int>("Camera.height");
+    double fx = config.getValue<double>("Camera.fx");
+    double fy = config.getValue<double>("Camera.fy");
+    double cx = config.getValue<double>("Camera.cx");
+    double cy = config.getValue<double>("Camera.cy");
+
+    open3d::camera::PinholeCameraIntrinsic intrinsic;
+    intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+    return intrinsic;
+}
+
+bool Integrater::createRGBDImage(Parser config, const char *depth_file, const char *rgb_file, open3d::geometry::RGBDImage &rgbd, bool grayScale)
+{
+    using namespace open3d;
+
     geometry::Image depth;
+    geometry::Image rgb;
+    double depth_factor = config.getValue<double>("depth_factor");
+    double depth_truncate = config.getValue<double>("depth_truncate");
 
     bool read = false;
-    read = io::ReadImage(frame.getRGBImagePath().c_str(), color);
-    if(!read)
-        return false;
-    read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+    read = io::ReadImage(depth_file, depth);
     if(!read)
         return false;
 
-    auto rgbd = geometry::RGBDImage::CreateFromColorAndDepth(
-            color, depth, mTSDF_param.depth_factor,
-            mTSDF_param.depth_truncate, false);
+    read = io::ReadImage(rgb_file,rgb);
+    if(!read)
+        return false;
 
-    Eigen::Matrix4d extrinsic = Eigen::Matrix4d::Identity();
+    rgbd = *geometry::RGBDImage::CreateFromColorAndDepth(
+            rgb, depth, depth_factor,
+            depth_truncate, grayScale);
 
-//    auto pose = frame.getConstTwc();
-    auto pose = frame.getConstTcw();
-
-    extrinsic.topLeftCorner(3,3)<<pose(0,0),pose(0,1),pose(0,2),
-            pose(1,0),pose(1,1),pose(1,2),
-            pose(2,0),pose(2,1),pose(2,2);
-    extrinsic.topRightCorner(3,1)<<pose(0,3),pose(1,3),pose(2,3);
-//    std::cout<<extrinsic<<std::endl;
-    mVolume_ptr->Integrate(*rgbd,
-                           mIntrinsic,
-                           extrinsic);
-}
-
-bool Integrater::saveTSDF(const char* path)
-{
-//    auto mesh = mVolume.ExtractTriangleMesh();
-//                    io::WriteTriangleMesh("mesh_" + save_index_str + ".ply",
-//                                          *mesh);
     return true;
 }
 
-bool Integrater::generateMesh(bool visualize)
+bool Integrater::createRGBDImageFromFrame(const Frame frame, Parser config, open3d::geometry::RGBDImage &rgbd, bool useIRImg)
 {
     using namespace open3d;
-    auto mesh = mVolume_ptr->ExtractTriangleMesh();
-//    mesh->ComputeVertexNormals();
-    io::WriteTriangleMesh("mesh.ply",*mesh);
-    if(visualize)
-        visualization::DrawGeometriesWithCustomAnimation(
-            {mesh}, "Animation", 1920, 1080);
+    geometry::Image depth;
+    geometry::Image infraRed;
+    geometry::Image rgb;
+    double depth_factor = config.getValue<double>("depth_factor");
+    double depth_truncate = config.getValue<double>("depth_truncate");
+
+    bool read = false;
+    read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);
+    if(!read)
+        return false;
+    if(useIRImg)
+    {
+        read = io::ReadImageFromPNG(frame.getInfraRedImagePath().c_str(),infraRed);
+        if(!read)
+            return false;
+        rgbd = *geometry::RGBDImage::CreateFromColorAndDepth(
+                infraRed, depth, depth_factor,
+                depth_truncate, true);
+    }
+    else
+    {
+        read = io::ReadImage(frame.getRGBImagePath().c_str(), rgb);
+        if(!read)
+            return false;
+
+        rgbd = *geometry::RGBDImage::CreateFromColorAndDepth(
+                rgb, depth, depth_factor,
+                depth_truncate, false);
+    }
+
+    return true;
 }

@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <Eigen/Geometry>
+#include <list>
 
 #include "util/Converter.h"
 namespace BAMapping
@@ -32,6 +33,7 @@ namespace BAMapping
         void addObservation(size_t point_id,Eigen::Vector3d observation);
 
         bool isPointObserved(size_t global_point_id);
+        std::list<size_t> getObservedPointsIds();
         Eigen::Vector3d getObservationByPointIndex(size_t global_point_id);
         void getIntrinsics(double& fx,double& fy,double& cx,double& cy);
         std::map<size_t ,Eigen::Vector3d> getObservations();
@@ -42,9 +44,10 @@ namespace BAMapping
         const Eigen::Vector3d getConstTranslation();
         inline double getTimeStamp() const{return mTimeStamp;}
 
-        void setImagePaths(const char* rgb_path,const char* depth_path);
+        void setImagePaths(const char* rgb_path,const char* depth_path,const char* infraRead_path = NULL);
         inline std::string getRGBImagePath()const {return m_rgbImgPath;}
         inline std::string getDepthImagePath()const {return m_depthImgPath;}
+        inline std::string getInfraRedImagePath()const {return m_infraRedImgPath;}
 
         size_t mGlobalIndex;
 
@@ -52,6 +55,7 @@ namespace BAMapping
         double mTimeStamp;
         std::string m_rgbImgPath;
         std::string m_depthImgPath;
+        std::string m_infraRedImgPath;
         //for optimization
         Eigen::AngleAxisd m_angleAxis;
         Eigen::Vector3d m_translation;

@@ -5,32 +5,28 @@
 
 #include <iostream>
 
-#include "util/Frame.h"
 #include "Frame.h"
-#include <Open3D/Open3D.h>
+#include "Graph.h"
+#include "util/Parser.h"
+#include "Open3D/Open3D.h"
 
-class Integrater
+namespace BAMapping
 {
-public:
-    Integrater();
-    void init(std::string strSettingPath);
-    bool integrateFrame(const BAMapping::Frame frame);
-    bool integrateFrame(const Frame frame);
-    bool saveTSDF(const char* path);
-    bool generateMesh(bool visualize = true);
-private:
-    struct TSDF_Param
+    class Integrater
     {
-        float tsdf_size;
-        float tsdf_res;
-        double depth_factor;
-        double depth_truncate;
+    public:
+        typedef std::shared_ptr<open3d::integration::ScalableTSDFVolume> Volume;
+        Integrater();
+        static Volume createVolume(const Parser config);
+        static void integrateGraph(const Graph& graph, const char* config_file, const char* plyFile_name, const Mat4 Twc0 = Mat4::Identity());
+        static open3d::camera::PinholeCameraIntrinsic getIntrinsics(Parser config);
+        static bool createRGBDImage(Parser config, const char* depth_file, const char* rgb_file, open3d::geometry::RGBDImage &rgbd, bool grayScale);
+        static void integrate(const Parser config, const std::string poseGraphName, const FrameVector frameVector, const char* plyFile_name);
+        static void integrateFragment(const Parser config, Volume volume, const size_t fragment_id, const FrameVector frameVector, const Eigen::Matrix4d Twc0);
+        static bool createRGBDImageFromFrame(const Frame frame, Parser config, open3d::geometry::RGBDImage &rgbd, bool useIRImg);
 
     };
-    TSDF_Param mTSDF_param;
-    std::shared_ptr<open3d::integration::ScalableTSDFVolume> mVolume_ptr;
-    open3d::camera::PinholeCameraIntrinsic mIntrinsic;
 
-};
+}
 
 #endif // INTEGRATER_H

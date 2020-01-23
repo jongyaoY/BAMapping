@@ -5,8 +5,8 @@
 #ifndef BAMAPPING_READER_H
 #define BAMAPPING_READER_H
 
-#include "../Graph.h"
-#include "Parser.h"
+#include "../Frame.h"
+#include "../Point.h"
 namespace BAMapping
 {
     namespace io
@@ -14,15 +14,10 @@ namespace BAMapping
         class Reader
         {
         public:
-            static bool readITEData(Graph *pGraph,
-                                    const char* cam_file, const char* obs_file,const char* point_file,
-                                    const char* dataset_path,const char *config_file);
-
-        private:
-            static bool readITEFrames(Graph *pGraph,
-                                      const char* cam_file, const char* obs_file,
-                                      const char* dataset_path,const char* config_file);
-            static bool readITEPoints(Graph *pGraph,const char* point_file);
+            static FrameVector readITEFrames(const char *cam_file,const char *dataset_path, const size_t every_n_frame = 1);
+            static FrameVector readITEFrames(const char* cam_file,const char* obs_file, const char* dataset_path, const size_t every_n_frame = 1);
+            static FrameVector readITEFormat(const char* cam_file, const char* img_path_file);
+            static PointVector readPoints(const char *point_file);
         };
     }
 

@@ -2,6 +2,7 @@
 // Created by jojo on 06.12.19.
 //
 
+#include <iostream>
 #include "Frame.h"
 
 using namespace BAMapping;
@@ -27,6 +28,15 @@ void Frame::setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis, Eigen::Vector3d po
 {
     m_angleAxis = angleAxis;
     m_translation = point;
+}
+std::list<size_t> Frame::getObservedPointsIds()
+{
+    std::list<size_t > ids;
+    for(auto obs : mObservations)
+    {
+        ids.push_back(obs.first);
+    }
+    return ids;
 }
 
 void Frame::setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d point)
@@ -59,10 +69,14 @@ void Frame::addObservation(size_t point_id, Eigen::Vector3d observation)
     mObservations.emplace(point_id,observation);
 }
 
-void Frame::setImagePaths(const char *rgb_path, const char *depth_path)
+void Frame::setImagePaths(const char *rgb_path, const char *depth_path, const char* infraRead_path)
 {
     m_rgbImgPath = rgb_path;
     m_depthImgPath = depth_path;
+    if(infraRead_path == NULL)
+        m_infraRedImgPath = "";
+    else
+        m_infraRedImgPath = infraRead_path;
 }
 
 const Eigen::Matrix4d Frame::getConstTwc() const

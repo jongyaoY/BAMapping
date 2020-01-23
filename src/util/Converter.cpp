@@ -26,7 +26,9 @@ Eigen::Matrix4d Converter::AngleAxisPointToTwc(const Eigen::AngleAxisd angleAxis
     Eigen::Matrix4d Twc =  Eigen::Matrix4d::Identity();
     Eigen::Matrix3d R;
     Eigen::Vector3d t;
-    R = angleAxis.inverse().toRotationMatrix();
+    auto angleAxis_inv = angleAxis;
+
+    R = angleAxis.toRotationMatrix().transpose();
     t = R*point;
     t*=-1;
     setRotToMatrix4d(R,Twc);

@@ -9,94 +9,49 @@
 #include <memory>
 #include "Frame.h"
 #include "Point.h"
-
+#include "math/Types.h"
 namespace BAMapping
 {
     class Graph
     {
     public:
-        typedef std::pair<size_t ,size_t> pair;
-        typedef std::shared_ptr<Graph> Ptr;
-        Graph();
-        static void setAsRootGraph(Graph* pRootGraph);
-        static void addGlobalFrame(const Frame frame);
-        static void addGlobalPoint(const Point point);
-        static void addObservationsToPoints();
+        void setGraph(FrameVector frameVector, PointVector pointVector);
+        void setNodesFromeFrames(FrameVector frameVector);
+        void setPoints(PointVector pointVector, Mat4 Tc0w = Mat4::Identity());
+        void updateFrames(FrameVector& frameVector);
+        void updatePoints(PointVector& pointVector);
+        PointVector copyPoints(const Eigen::Matrix4d Twc0);
+        FrameVector copyFrames(const Eigen::Matrix4d Twc0);
+        class Node
+        {
+        public:
+            Node(Mat4 Twc) : pose_(Twc){}
+            Mat4 pose_;
+            std::string rgb_path_;
+            std::string depth_path_;
+            std::string ir_path_;
+        };
+        class Point
+        {
+        public:
+            Point(Vec3 pose) : pose_(pose){ }
+            Vec3 pose_;
+        };
+        class Edge
+        {
+        public:
+            Edge(size_t node_id, size_t point_id, Vec3 obs) :
+                    node_id_(node_id),
+                    point_id_(point_id),
+                    obs_(obs){}
+            size_t node_id_;
+            size_t point_id_;
+            Vec3 obs_;
+        };
+        std::vector<Node> nodes_;
+        std::vector<Point> points_;
+        std::vector<Edge> edges_;
 
-        void splitInto(const unsigned int num_subgraphs);
-        void setParent(Ptr parent);
-        void addFrame(Frame* pFrame);
-        void addPoints();
-        void addEdges();
-        void addInterObservations();//todo
-        void addPoint(size_t global_index,Point* pPoint);
-        void addEdge(const pair ids,const Eigen::Vector3d observation);
-        std::vector<Ptr> getSubmaps();
-
-        const std::list<size_t> getTrackedPointIndexes();
-        const FrameVector getLocalConstFrames();
-        const PointVector getLocalConstPoints();
-        const FrameVector getConstFrames();
-        const PointVector getConstPoints();
-        const FrameVector getConstGlobalFrames();
-        const PointVector getConstGlobalPoints();
-        //for intergraph optimization
-        void getInterGraphOptParameters(double** cam_param, double** point_param);
-        Frame getBaseFrame();
-        void setBaseFramePoseByAngleAxisAndPoint(Eigen::AngleAxisd angleAxis, Eigen::Vector3d point);
-        Ptr getParent() const;
-        std::vector<Ptr> getChildren() const;
-        std::vector<Point*> getpSeparators() const;
-
-        void getOptParameters(double** cam_param, double** point_param);
-        size_t getFrameVectorSize();
-        size_t getPointVectorSize();
-        size_t getSupGraphSize();
-        size_t getSeparatorSize();
-        size_t getFrameBlockSize();
-        size_t getPointBlockSize();
-        std::vector<size_t> getSeparatorLocalIndexes();
-        const std::map<pair,Eigen::Vector3d> getEdges();
-        const std::map<pair,Eigen::Vector3d> getInterObservations();
-        void updateLocal(double** cam_param,double** point_param);
-        void updateGlobal(double** cam_param,double** point_param);
-        void updateSeparatorsToLocal();
-        void applyLocal();
-        void applyGlobal();
-
-        size_t mGraphIndex;
-
-    protected:
-        //Todo
-        //trim points that are observed by less then N frames
-        void trimPointsAndEdges(unsigned int threshold);
-        //
-        void alignToBaseFrame();
-        bool hasFrame(size_t FrameIndex);
-        bool hasPoint(size_t PointIndex);
-
-        void findSeparatorPoints();
-
-        Ptr mpParentGraph;
-        std::vector<Ptr> mpChildGraphVec;
-        FramePtrVector mpFrameVec;
-        PointPtrVector mpPointVec;
-        PointPtrVector mpSeparatorPointVec;
-        std::list<size_t> mTrackedPointIndexes; //global index
-
-//        (frame_id , point_id) -> observation
-        FrameVector mLocalFrameVec;
-        PointVector mLocalPointVec;
-        std::vector<size_t> mSeparatorLocalIndexes;
-        std::map<pair,Eigen::Vector3d> mEdges;
-        std::map<pair,Eigen::Vector3d> mInterObservations;
-    private:
-        Ptr mPointer;
-        //global
-        static Graph* mpRootGraph;
-        static std::map<size_t,Frame*> mpGlobalIndexedFrames;
-        static std::map<size_t,Point*> mpGlobalIndexedPoints;
-        static std::map<pair,Eigen::Vector3d> mObservations;
     };
 
 }//end of namspace
