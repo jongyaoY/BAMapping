@@ -97,6 +97,7 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
         auto point = pointVector[global_point_id];
         Graph::Point p(point.getPoseInFrame(Tc0w));
         edge.point_id_ = points_.size();
+        p.global_id = points_.size();
         points_.push_back(p);
     }
 }
@@ -117,4 +118,36 @@ FrameVector Graph::copyFrames(const Eigen::Matrix4d Twc0)
         frameVector.push_back(frame);
     }
     return frameVector;
+}
+
+std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, const size_t n_overlap, const Graph& graph)
+{
+    std::vector<Graph> subgraphs;
+    for(size_t node_id = 0; node_id < graph.nodes_.size();)
+    {
+        Graph subgraph;
+        auto Tc0w = graph.nodes_[node_id].pose_.inverse();
+        for(size_t i = 0; i < n_nodes_per_graph&&node_id < graph.nodes_.size(); i++,node_id++)
+        {
+            auto node = graph.nodes_[node_id];
+            node.pose_ = Tc0w * node.pose_;
+            for(auto edge : graph.edges_)
+            {
+                if(edge.node_id_ == node_id)
+                {
+                    Edge edge_sub(subgraph.nodes_.size(),subgraph.points_.size(),edge.obs_);
+                    Point point_sub = graph.points_[edge.point_id_];
+                    subgraph.points_.push_back(point_sub);
+                    subgraph.edges_.push_back(edge_sub);
+                }
+            }
+            subgraph.nodes_.push_back(node);
+        }
+        subgraphs.push_back(subgraph);
+        if(node_id >= graph.nodes_.size()-1)
+            break;
+        node_id -= n_overlap;
+    }
+
+    return subgraphs;
 }

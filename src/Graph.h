@@ -15,6 +15,7 @@ namespace BAMapping
     class Graph
     {
     public:
+        static std::vector<Graph> spliteIntoSubgraphs(const size_t n_nodes_per_graph, const size_t n_overlap, const Graph& graph);
         void setGraph(FrameVector frameVector, PointVector pointVector);
         void setNodesFromeFrames(FrameVector frameVector);
         void setPoints(PointVector pointVector, Mat4 Tc0w = Mat4::Identity());
@@ -36,6 +37,7 @@ namespace BAMapping
         public:
             Point(Vec3 pose) : pose_(pose){ }
             Vec3 pose_;
+            size_t global_id;
         };
         class Edge
         {

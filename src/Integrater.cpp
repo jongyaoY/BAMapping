@@ -33,9 +33,9 @@ void Integrater::integrateGraph(const Graph &graph, const char *config_file, con
         Mat4 extrinsics = Twcn.inverse();
 
         geometry::RGBDImage rgbd;
-        createRGBDImage(config, node.depth_path_.c_str(), node.rgb_path_.c_str(), rgbd, false);
-
-        volume->Integrate(rgbd,intrinsics,extrinsics);
+        bool success = createRGBDImage(config, node.depth_path_.c_str(), node.rgb_path_.c_str(), rgbd, false);
+        if(success)
+            volume->Integrate(rgbd,intrinsics,extrinsics);
     }
 
     io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());

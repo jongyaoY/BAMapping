@@ -23,12 +23,12 @@ int main(int argc, char** argv)
     auto key_frames = FrameMethods::filterFrames(config_file,frameVec);
     std::cout<<frameVec.size()<<std::endl;
     std::cout<<key_frames.size()<<std::endl;
-//    frameVec.erase(frameVec.begin(),frameVec.begin() + 200);
-//    frameVec.erase(frameVec.begin()+200, frameVec.end());
 
     Graph graph;
 
     graph.setGraph(key_frames,ref_pointVec);
+
+    auto subgraphs = Graph::spliteIntoSubgraphs(100,10,graph);
 
     BundleAdjuster::optimize(graph, "../dataset/ITE_Long/ITE.yaml");
     auto pointVec = graph.copyPoints(frameVec.front().getConstTwc());
@@ -41,5 +41,5 @@ int main(int argc, char** argv)
     viewer.setRefPoints(ref_pointVec);
     viewer.visualize();
 
-//    Integrater::integrateGraph(graph,config_file,mesh_file,key_frames.front().getConstTwc());
+    Integrater::integrateGraph(graph,config_file,mesh_file,key_frames.front().getConstTwc());
 }
