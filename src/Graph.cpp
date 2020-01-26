@@ -127,6 +127,8 @@ std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, co
     {
         Graph subgraph;
         auto Tc0w = graph.nodes_[node_id].pose_.inverse();
+        Eigen::Affine3d Tc0w_aff;
+        Tc0w_aff.matrix() = Tc0w;
         for(size_t i = 0; i < n_nodes_per_graph&&node_id < graph.nodes_.size(); i++,node_id++)
         {
             auto node = graph.nodes_[node_id];
@@ -137,6 +139,7 @@ std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, co
                 {
                     Edge edge_sub(subgraph.nodes_.size(),subgraph.points_.size(),edge.obs_);
                     Point point_sub = graph.points_[edge.point_id_];
+                    point_sub.pose_ = Tc0w_aff * point_sub.pose_;
                     subgraph.points_.push_back(point_sub);
                     subgraph.edges_.push_back(edge_sub);
                 }
@@ -150,4 +153,29 @@ std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, co
     }
 
     return subgraphs;
+}
+
+Graph Graph::generateGlobalGraph(const size_t n_overlap, const Graph &graph, const std::vector<Graph> &subgraphs)
+{
+    Graph globalGraph;
+    size_t n_nodes_per_graph = subgraphs.front().nodes_.size();
+    for(size_t node_id = 0; node_id < graph.nodes_.size();)
+    {
+        auto Twc0 = graph.nodes_[node_id].pose_;
+        Node node(Twc0);
+        globalGraph.nodes_.push_back(node);
+        node_id += n_nodes_per_graph;
+        node_id -= n_overlap;
+    }
+    for(size_t node_id = 0; node_id < globalGraph.nodes_.size(); node_id++)
+    {
+        auto subgraph = subgraphs[node_id];
+        for(auto point : subgraph.points_)
+        {
+            Edge edge(node_id,point.global_id,point.pose_);
+            globalGraph.edges_.push_back(edge);
+        }
+    }
+    globalGraph.points_ = graph.points_;
+    return globalGraph;
 }

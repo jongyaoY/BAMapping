@@ -28,11 +28,19 @@ int main(int argc, char** argv)
 
     graph.setGraph(key_frames,ref_pointVec);
 
-    auto subgraphs = Graph::spliteIntoSubgraphs(100,10,graph);
+    auto subgraphs = Graph::spliteIntoSubgraphs(100,0,graph);
+//    BundleAdjuster::optimize(graph, "../dataset/ITE_Long/ITE.yaml");
+    for(auto& subgraph : subgraphs)
+    {
+    BundleAdjuster::optimize(subgraph, "../dataset/ITE_Long/ITE.yaml");
+    }
+    auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
+    BundleAdjuster::optimizeGlobal(globalgraph, "../dataset/ITE_Long/ITE.yaml");
+    auto pointVec = globalgraph.copyPoints(frameVec.front().getConstTwc());
+    auto frames = globalgraph.copyFrames(frameVec.front().getConstTwc());
+//    auto pointVec = subgraphs[0].copyPoints(frameVec.front().getConstTwc());
+//    auto frames = subgraphs[0].copyFrames(frameVec.front().getConstTwc());
 
-    BundleAdjuster::optimize(graph, "../dataset/ITE_Long/ITE.yaml");
-    auto pointVec = graph.copyPoints(frameVec.front().getConstTwc());
-    auto frames = graph.copyFrames(frameVec.front().getConstTwc());
 
 
     Viewer viewer;
@@ -41,5 +49,5 @@ int main(int argc, char** argv)
     viewer.setRefPoints(ref_pointVec);
     viewer.visualize();
 
-    Integrater::integrateGraph(graph,config_file,mesh_file,key_frames.front().getConstTwc());
+    Integrater::integrateGraph(subgraphs[0],config_file,mesh_file,key_frames.front().getConstTwc());
 }

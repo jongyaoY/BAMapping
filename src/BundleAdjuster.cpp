@@ -3,6 +3,7 @@
 //
 
 #include "BundleAdjuster.h"
+#include "imu_factor.h"
 
 using namespace BAMapping;
 
@@ -15,7 +16,6 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     auto intrinsics = getIntrinsics(config, graph.nodes_.size());
 
     bool is_camera_locked = false;
-    AlignmentError_3D::setIntrinsics(431.828094,431.828094,323.000610,240.218506);
     for(auto edge : graph.edges_)
     {
         auto cam_id = edge.node_id_;
@@ -33,8 +33,6 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
             problem.SetParameterBlockConstant(&extrinsics[0](0));
             is_camera_locked = true;
         }
-//        problem.SetParameterBlockConstant(&intrinsics[cam_id](0));
-
     }
 
     for(int i = 0; i < intrinsics.size(); ++i)
@@ -43,16 +41,6 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
 
 
     ceres::Solver::Options options;
-
-//    options.minimizer_progress_to_stdout = true;
-//    options.num_threads = 1;
-//    options.linear_solver_type = ceres::LinearSolverType::DENSE_SCHUR;
-//    options.preconditioner_type = ceres::PreconditionerType::JACOBI;
-//    options.use_nonmonotonic_steps = false;
-//    options.minimizer_type = ceres::TRUST_REGION;
-//    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-//    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
-
 
     options.use_nonmonotonic_steps = true;
     options.preconditioner_type = ceres::SCHUR_JACOBI;
@@ -68,6 +56,50 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     unpackPointParam(graph,points);
     std::cout << summary.FullReport() << std::endl;
 }
+
+void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file)
+{
+    Parser config(config_file);
+    ceres::Problem problem;
+    auto extrinsics = packCameraParam(graph);
+    auto points = packPointParam(graph);
+
+    bool is_camera_locked = false;
+    for(auto edge : graph.edges_)
+    {
+        auto cam_id = edge.node_id_;
+        auto point_id = edge.point_id_;
+        auto obs = edge.obs_;
+
+
+        ceres::CostFunction* cost_function = AlignmentError_3D_Direct::Create(obs[0],obs[1],obs[2]);
+        problem.AddResidualBlock(cost_function,NULL, &extrinsics[cam_id](0), &points[point_id](0));
+
+        if (!is_camera_locked)
+        {
+            problem.SetParameterBlockConstant(&extrinsics[0](0));
+            is_camera_locked = true;
+        }
+    }
+
+
+    ceres::Solver::Options options;
+
+    options.use_nonmonotonic_steps = true;
+    options.preconditioner_type = ceres::SCHUR_JACOBI;
+    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+    options.use_inner_iterations = true;
+    options.max_num_iterations = 10;
+    options.minimizer_progress_to_stdout = true;
+
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+
+    unpackCameraParam(graph,extrinsics);
+    unpackPointParam(graph,points);
+    std::cout << summary.FullReport() << std::endl;
+}
+
 
 std::vector<Vec6> BundleAdjuster::packCameraParam(const Graph& graph)
 {
