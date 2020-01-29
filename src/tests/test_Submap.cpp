@@ -35,11 +35,11 @@ int main(int argc, char** argv)
     BundleAdjuster::optimize(subgraph, "../dataset/ITE_Long/ITE.yaml");
     }
     auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
-    BundleAdjuster::optimizeGlobal(globalgraph, "../dataset/ITE_Long/ITE.yaml");
-    auto pointVec = globalgraph.copyPoints(frameVec.front().getConstTwc());
-    auto frames = globalgraph.copyFrames(frameVec.front().getConstTwc());
-//    auto pointVec = subgraphs[0].copyPoints(frameVec.front().getConstTwc());
-//    auto frames = subgraphs[0].copyFrames(frameVec.front().getConstTwc());
+//    BundleAdjuster::optimizeGlobal(globalgraph, "../dataset/ITE_Long/ITE.yaml");
+//    auto pointVec = globalgraph.copyPoints(frameVec.front().getConstTwc());
+//    auto frames = globalgraph.copyFrames(frameVec.front().getConstTwc());
+    auto pointVec = subgraphs[10].copyPoints(globalgraph.nodes_[10].pose_);
+    auto frames = subgraphs[10].copyFrames(globalgraph.nodes_[10].pose_);
 
 
 

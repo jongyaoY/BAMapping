@@ -3,7 +3,8 @@
 //
 
 #include "BundleAdjuster.h"
-#include "imu_factor.h"
+//#include "imu_factor.h"
+#include "PhotoGeoFactor.h"
 
 using namespace BAMapping;
 
