@@ -5,6 +5,7 @@
 #include "BundleAdjuster.h"
 //#include "imu_factor.h"
 #include "PhotoGeoFactor.h"
+#include "GeometryMethods.h"
 
 using namespace BAMapping;
 
@@ -26,8 +27,6 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
         ceres::CostFunction* cost_function = ReprojectionError_3D::Create(obs[0],obs[1],obs[2]);
         problem.AddResidualBlock(cost_function,NULL, &intrinsics[cam_id](0), &extrinsics[cam_id](0), &points[point_id](0));
 
-//        ceres::CostFunction* cost_function = AlignmentError_3D::Create(obs[0],obs[1],obs[2]);
-//        problem.AddResidualBlock(cost_function,NULL, &extrinsics[cam_id](0), &points[point_id](0));
 
         if (!is_camera_locked)
         {
@@ -40,6 +39,44 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
         problem.SetParameterBlockConstant(&intrinsics[i](0));
 
 
+    double voxel_size = config.getValue<double>("voxel_size");
+    for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+    {
+
+        auto node_s = graph.nodes_[i];
+        auto node_t = graph.nodes_[i + 1];
+        std::shared_ptr<open3d::geometry::PointCloud> source;
+        std::shared_ptr<open3d::geometry::PointCloud> target;
+
+        bool sucess = false;
+        sucess = GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
+        if(!sucess)
+            continue;
+        sucess = GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
+        if(!sucess)
+            continue;
+
+        auto source_down = source->VoxelDownSample(voxel_size);
+        auto target_down = target->VoxelDownSample(voxel_size);
+
+        target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+
+        auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+        for(auto corr : result.correspondence_set_)
+        {
+            auto s = corr[0];
+            auto t = corr[1];
+            ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+//            ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,1,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
+            problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
+        }
+
+        if (!is_camera_locked)
+        {
+            problem.SetParameterBlockConstant(&extrinsics[0](0));
+            is_camera_locked = true;
+        }
+    }
 
     ceres::Solver::Options options;
 
@@ -47,7 +84,10 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     options.preconditioner_type = ceres::SCHUR_JACOBI;
     options.linear_solver_type = ceres::ITERATIVE_SCHUR;
     options.use_inner_iterations = true;
-    options.max_num_iterations = 100;
+//    options.minimizer_type = ceres::TRUST_REGION;
+//    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+//    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
+    options.max_num_iterations = 30;
     options.minimizer_progress_to_stdout = true;
 
     ceres::Solver::Summary summary;
@@ -83,7 +123,39 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file)
         }
     }
 
+    double voxel_size = config.getValue<double>("voxel_size");
+    for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+    {
 
+        auto node_s = graph.nodes_[i];
+        auto node_t = graph.nodes_[i + 1];
+        std::shared_ptr<open3d::geometry::PointCloud> source;
+        std::shared_ptr<open3d::geometry::PointCloud> target;
+//        GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
+//        GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
+//
+//        auto source_down = source->VoxelDownSample(voxel_size);
+//        auto target_down = target->VoxelDownSample(voxel_size);
+//
+//        target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+//
+//        auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+//
+//        for(auto corr : result.correspondence_set_)
+//        {
+//            auto s = corr[0];
+//            auto t = corr[1];
+//            ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+////            ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,1,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
+//            problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
+//        }
+
+        if (!is_camera_locked)
+        {
+            problem.SetParameterBlockConstant(&extrinsics[0](0));
+            is_camera_locked = true;
+        }
+    }
     ceres::Solver::Options options;
 
     options.use_nonmonotonic_steps = true;

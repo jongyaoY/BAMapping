@@ -8,7 +8,7 @@ Integrater::Integrater()
 
 }
 
-void Integrater::integrateGraph(const Graph &graph, const char *config_file, const char* plyFile_name, const Mat4 Twc0)
+void Integrater::integrateGraph(const Graph &graph, const char *config_file, const char* plyFile_name, const Mat4 Twc0, const bool visualize)
 {
     using namespace open3d;
     Parser config(config_file);
@@ -39,7 +39,10 @@ void Integrater::integrateGraph(const Graph &graph, const char *config_file, con
     }
 
     io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());
-    visualization::DrawGeometries({volume->ExtractTriangleMesh()});
+    if(visualize)
+    {
+        visualization::DrawGeometries({volume->ExtractTriangleMesh()});
+    }
 
 }
 

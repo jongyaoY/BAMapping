@@ -78,6 +78,7 @@ add_library(${PROJECT_NAME} SHARED
             src/Point.cpp
             src/BundleAdjuster.cpp
             src/Error.h
+            src/GeometryMethods.cpp
             src/io/Reader.cpp
 #            src/io/Parser.cpp
             src/util/Converter.cpp

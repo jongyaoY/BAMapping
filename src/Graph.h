@@ -17,6 +17,7 @@ namespace BAMapping
     public:
         static std::vector<Graph> spliteIntoSubgraphs(const size_t n_nodes_per_graph, const size_t n_overlap, const Graph& graph);
         static Graph generateGlobalGraph(const size_t n_overlap, const Graph& graph, const std::vector<Graph>& subgraphs);
+        static Graph generateResultGraph(const size_t n_overlap, const Graph& globalgraph, const std::vector<Graph>& subgraphs);
         void setGraph(FrameVector frameVector, PointVector pointVector);
         void setNodesFromeFrames(FrameVector frameVector);
         void setPoints(PointVector pointVector, Mat4 Tc0w = Mat4::Identity());

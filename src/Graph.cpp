@@ -179,3 +179,56 @@ Graph Graph::generateGlobalGraph(const size_t n_overlap, const Graph &graph, con
     globalGraph.points_ = graph.points_;
     return globalGraph;
 }
+Graph Graph::generateResultGraph(const size_t n_overlap, const Graph& globalgraph, const std::vector<Graph>& subgraphs)
+{
+    Graph resultGraph;
+    resultGraph.points_ = globalgraph.points_;
+    bool is_first_graph = true;
+    for(size_t graph_id = 0; graph_id < subgraphs.size(); graph_id++)
+    {
+        const Graph& graph = subgraphs[graph_id];
+        if(is_first_graph)
+        {
+            for(size_t i = 0; i < graph.nodes_.size(); i++)
+            {
+                auto node = graph.nodes_[i];
+                auto Twc0 = globalgraph.nodes_[graph_id].pose_;
+                node.pose_ = Twc0 * node.pose_;
+                for(const Edge& edge : graph.edges_)
+                {
+                    if(i == edge.node_id_)
+                    {
+                        size_t globalPoint_id = graph.points_[edge.point_id_].global_id;
+                        Edge globalEdge(resultGraph.nodes_.size(),globalPoint_id,edge.obs_);
+                        resultGraph.edges_.push_back(edge);
+                    }
+                }
+                resultGraph.nodes_.push_back(node);
+
+            }
+            is_first_graph = false;
+        }
+        else
+        {
+            for(size_t i = n_overlap; i < graph.nodes_.size(); i++)
+            {
+                auto node = graph.nodes_[i];
+                auto Twc0 = globalgraph.nodes_[graph_id].pose_;
+                node.pose_ = Twc0 * node.pose_;
+
+                for(const Edge& edge : graph.edges_)
+                {
+                    if(i == edge.node_id_)
+                    {
+                        size_t globalPoint_id = graph.points_[edge.point_id_].global_id;
+                        Edge globalEdge(resultGraph.nodes_.size(),globalPoint_id,edge.obs_);
+                        resultGraph.edges_.push_back(edge);
+                    }
+                }
+                resultGraph.nodes_.push_back(node);
+            }
+        }
+    }
+
+    return resultGraph;
+}

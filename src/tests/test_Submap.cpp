@@ -22,32 +22,41 @@ int main(int argc, char** argv)
 
     auto key_frames = FrameMethods::filterFrames(config_file,frameVec);
     std::cout<<frameVec.size()<<std::endl;
-    std::cout<<key_frames.size()<<std::endl;
+//    std::cout<<key_frames.size()<<std::endl;
 
     Graph graph;
 
     graph.setGraph(key_frames,ref_pointVec);
-
-    auto subgraphs = Graph::spliteIntoSubgraphs(100,0,graph);
-//    BundleAdjuster::optimize(graph, "../dataset/ITE_Long/ITE.yaml");
+    Parser config(config_file);
+    int n = config.getValue<int>("n_frames_per_fragment");
+    auto subgraphs = Graph::spliteIntoSubgraphs(n,0,graph);
+    auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
+    int id = 0;
     for(auto& subgraph : subgraphs)
     {
-    BundleAdjuster::optimize(subgraph, "../dataset/ITE_Long/ITE.yaml");
+        BundleAdjuster::optimize(subgraph, "../dataset/ITE_Long/ITE.yaml");
+//        Integrater::integrateGraph(subgraph,config_file,mesh_file,frameVec.front().getConstTwc());
+        id++;
+
     }
-    auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
-//    BundleAdjuster::optimizeGlobal(globalgraph, "../dataset/ITE_Long/ITE.yaml");
+
+    BundleAdjuster::optimizeGlobal(globalgraph, "../dataset/ITE_Long/ITE.yaml");
 //    auto pointVec = globalgraph.copyPoints(frameVec.front().getConstTwc());
 //    auto frames = globalgraph.copyFrames(frameVec.front().getConstTwc());
-    auto pointVec = subgraphs[10].copyPoints(globalgraph.nodes_[10].pose_);
-    auto frames = subgraphs[10].copyFrames(globalgraph.nodes_[10].pose_);
+//    int id = 0;
+//    BundleAdjuster::optimize(subgraphs[id], "../dataset/ITE_Long/ITE.yaml");
 
+//    auto pointVec = subgraphs[id].copyPoints(globalgraph.nodes_[id].pose_);
+//    auto frames = subgraphs[id].copyFrames(globalgraph.nodes_[id].pose_);
 
-
+    auto resultGraph = Graph::generateResultGraph(0,globalgraph,subgraphs);
+    auto pointVec = resultGraph.copyPoints(frameVec.front().getConstTwc());
+    auto frames = resultGraph.copyFrames(frameVec.front().getConstTwc());
     Viewer viewer;
     viewer.setFrames(frames);
     viewer.setPoints(pointVec);
     viewer.setRefPoints(ref_pointVec);
     viewer.visualize();
 
-    Integrater::integrateGraph(subgraphs[0],config_file,mesh_file,key_frames.front().getConstTwc());
+    Integrater::integrateGraph(resultGraph,config_file,mesh_file,frameVec.front().getConstTwc());
 }
