@@ -71,6 +71,11 @@ void Graph::setPoints(PointVector pointVector, Mat4 Tc0w)
 
 void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
 {
+    if(frameVector.empty())
+    {
+        printf("frame vector empty\n");
+        return;
+    }
     auto Tc0w = frameVector.front().getConstTcw();
     for(int i = 0; i < frameVector.size(); i++)
     {

@@ -18,7 +18,8 @@ namespace BAMapping
     {
     public:
         static void optimize(Graph& graph, const char* config_file);
-        static void optimizeGlobal(Graph& graph, const char* config_file);
+        static void optimizeGlobal(Graph& graph, const char* config_file,
+                const std::vector<std::string>& plyNames = std::vector<std::string>());
         static std::vector<Vec6> packCameraParam(const Graph& graph);
         static std::vector<Vec3> packPointParam(const Graph& graph);
         static std::vector<Vec4> getIntrinsics(Parser config, size_t n);

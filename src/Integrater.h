@@ -18,7 +18,8 @@ namespace BAMapping
         typedef std::shared_ptr<open3d::integration::ScalableTSDFVolume> Volume;
         Integrater();
         static Volume createVolume(const Parser config);
-        static void integrateGraph(const Graph& graph, const char* config_file, const char* plyFile_name, const Mat4 Twc0 = Mat4::Identity(), const bool visualize = false);
+        static void integrateGraph(const Graph& graph, const char* config_file, const char* plyFile_name, const bool output_pointcloud, const Mat4 Twc0 = Mat4::Identity(), const bool visualize = false);
+
         static open3d::camera::PinholeCameraIntrinsic getIntrinsics(Parser config);
         static bool createRGBDImage(Parser config, const char* depth_file, const char* rgb_file, open3d::geometry::RGBDImage &rgbd, bool grayScale);
         static void integrate(const Parser config, const std::string poseGraphName, const FrameVector frameVector, const char* plyFile_name);

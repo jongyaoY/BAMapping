@@ -8,7 +8,7 @@ Integrater::Integrater()
 
 }
 
-void Integrater::integrateGraph(const Graph &graph, const char *config_file, const char* plyFile_name, const Mat4 Twc0, const bool visualize)
+void Integrater::integrateGraph(const Graph &graph, const char *config_file, const char* plyFile_name, const bool output_pointcloud, const Mat4 Twc0, const bool visualize)
 {
     using namespace open3d;
     Parser config(config_file);
@@ -37,8 +37,14 @@ void Integrater::integrateGraph(const Graph &graph, const char *config_file, con
         if(success)
             volume->Integrate(rgbd,intrinsics,extrinsics);
     }
-
-    io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());
+    if(output_pointcloud)
+    {
+        io::WritePointCloud(plyFile_name,*volume->ExtractPointCloud());
+    }
+    else
+    {
+        io::WriteTriangleMesh(plyFile_name,*volume->ExtractTriangleMesh());
+    }
     if(visualize)
     {
         visualization::DrawGeometries({volume->ExtractTriangleMesh()});

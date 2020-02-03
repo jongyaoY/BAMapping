@@ -40,23 +40,26 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
 
 
     double voxel_size = config.getValue<double>("voxel_size");
+    std::shared_ptr<open3d::geometry::PointCloud> source;
+    std::shared_ptr<open3d::geometry::PointCloud> target;
+    GeometryMethods::createPointCloundFromNodes({graph.nodes_[0]},config,source,true);
+    auto source_down = source->VoxelDownSample(voxel_size);
+
     for(size_t i = 0; i < graph.nodes_.size()-1; i++)
     {
 
         auto node_s = graph.nodes_[i];
         auto node_t = graph.nodes_[i + 1];
-        std::shared_ptr<open3d::geometry::PointCloud> source;
-        std::shared_ptr<open3d::geometry::PointCloud> target;
+
 
         bool sucess = false;
-        sucess = GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
-        if(!sucess)
-            continue;
+//        sucess = GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
+//        if(!sucess)
+//            continue;
         sucess = GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
         if(!sucess)
             continue;
 
-        auto source_down = source->VoxelDownSample(voxel_size);
         auto target_down = target->VoxelDownSample(voxel_size);
 
         target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
@@ -71,6 +74,7 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
             problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
         }
 
+        *source_down = *target_down;
         if (!is_camera_locked)
         {
             problem.SetParameterBlockConstant(&extrinsics[0](0));
@@ -80,13 +84,13 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
 
     ceres::Solver::Options options;
 
-    options.use_nonmonotonic_steps = true;
-    options.preconditioner_type = ceres::SCHUR_JACOBI;
-    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
-    options.use_inner_iterations = true;
-//    options.minimizer_type = ceres::TRUST_REGION;
-//    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-//    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
+//    options.use_nonmonotonic_steps = true;
+//    options.preconditioner_type = ceres::SCHUR_JACOBI;
+//    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+//    options.use_inner_iterations = true;
+    options.minimizer_type = ceres::TRUST_REGION;
+    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
     options.max_num_iterations = 30;
     options.minimizer_progress_to_stdout = true;
 
@@ -98,13 +102,14 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     std::cout << summary.FullReport() << std::endl;
 }
 
-void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file)
+void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const std::vector<std::string>& plyNames)
 {
     Parser config(config_file);
     ceres::Problem problem;
     auto extrinsics = packCameraParam(graph);
     auto points = packPointParam(graph);
-
+    double sparse_weight = config.getValue<double>("global_sparse_weight");
+    double dense_weight = 1 - sparse_weight;
     bool is_camera_locked = false;
     for(auto edge : graph.edges_)
     {
@@ -114,6 +119,8 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file)
 
 
         ceres::CostFunction* cost_function = AlignmentError_3D_Direct::Create(obs[0],obs[1],obs[2]);
+        ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,sparse_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
+
         problem.AddResidualBlock(cost_function,NULL, &extrinsics[cam_id](0), &points[point_id](0));
 
         if (!is_camera_locked)
@@ -122,47 +129,57 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file)
             is_camera_locked = true;
         }
     }
-
-    double voxel_size = config.getValue<double>("voxel_size");
-    for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+    if(!plyNames.empty())
     {
-
-        auto node_s = graph.nodes_[i];
-        auto node_t = graph.nodes_[i + 1];
-        std::shared_ptr<open3d::geometry::PointCloud> source;
-        std::shared_ptr<open3d::geometry::PointCloud> target;
-//        GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
-//        GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
-//
-//        auto source_down = source->VoxelDownSample(voxel_size);
-//        auto target_down = target->VoxelDownSample(voxel_size);
-//
-//        target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
-//
-//        auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
-//
-//        for(auto corr : result.correspondence_set_)
-//        {
-//            auto s = corr[0];
-//            auto t = corr[1];
-//            ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
-////            ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,1,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
-//            problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
-//        }
-
-        if (!is_camera_locked)
+        double voxel_size = config.getValue<double>("voxel_size");
+        for(size_t i = 0; i < graph.nodes_.size()-1; i++)
         {
-            problem.SetParameterBlockConstant(&extrinsics[0](0));
-            is_camera_locked = true;
+
+            auto node_s = graph.nodes_[i];
+            auto node_t = graph.nodes_[i + 1];
+            std::shared_ptr<open3d::geometry::PointCloud> source(new open3d::geometry::PointCloud);
+            std::shared_ptr<open3d::geometry::PointCloud> target(new open3d::geometry::PointCloud);
+            geometry::TriangleMesh source_ply;
+            geometry::TriangleMesh target_ply;
+
+            io::ReadPointCloud(plyNames[i],*source);
+            io::ReadPointCloud(plyNames[i+1],*target);
+//            io::ReadTriangleMeshFromPLY(plyNames[i],source_ply,false);
+//            io::ReadTriangleMeshFromPLY(plyNames[i+1],target_ply,false);
+
+
+            auto source_down = source->VoxelDownSample(voxel_size);
+            auto target_down = target->VoxelDownSample(voxel_size);
+
+            target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+
+            auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+
+            for(auto corr : result.correspondence_set_)
+            {
+                auto s = corr[0];
+                auto t = corr[1];
+                ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,dense_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
+                problem.AddResidualBlock(cost_function, weight,&extrinsics[i](0),&extrinsics[i + 1](0));
+            }
+
+            if (!is_camera_locked)
+            {
+                problem.SetParameterBlockConstant(&extrinsics[0](0));
+                is_camera_locked = true;
+            }
         }
     }
+
+
     ceres::Solver::Options options;
 
     options.use_nonmonotonic_steps = true;
     options.preconditioner_type = ceres::SCHUR_JACOBI;
     options.linear_solver_type = ceres::ITERATIVE_SCHUR;
     options.use_inner_iterations = true;
-    options.max_num_iterations = 10;
+    options.max_num_iterations = 30;
     options.minimizer_progress_to_stdout = true;
 
     ceres::Solver::Summary summary;
