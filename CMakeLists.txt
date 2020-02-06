@@ -80,7 +80,7 @@ add_library(${PROJECT_NAME} SHARED
             src/Error.h
             src/GeometryMethods.cpp
             src/io/Reader.cpp
-#            src/io/Parser.cpp
+            src/io/Writer.cpp
             src/util/Converter.cpp
             src/util/Converter.h)
 #add_library(${PROJECT_NAME})

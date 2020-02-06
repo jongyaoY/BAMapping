@@ -43,7 +43,7 @@ namespace BAMapping
         const Eigen::Matrix4d getConstTwc() const;
         const Eigen::Matrix4d getConstTcw() const;
         const Eigen::AngleAxisd getConstAngleAxis();
-        const Eigen::Vector3d getConstTranslation();
+        const Eigen::Vector3d getConstTranslation() const {return m_translation;};
         inline double getTimeStamp() const{return mTimeStamp;}
 
         void setImagePaths(const char* rgb_path,const char* depth_path,const char* infraRead_path = NULL);
@@ -52,7 +52,7 @@ namespace BAMapping
         inline std::string getInfraRedImagePath()const {return m_infraRedImgPath;}
 
         size_t mGlobalIndex;
-
+        int mITEId;
     private:
         double mTimeStamp;
         std::string m_rgbImgPath;

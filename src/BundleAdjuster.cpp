@@ -16,7 +16,7 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     auto extrinsics = packCameraParam(graph);
     auto points = packPointParam(graph);
     auto intrinsics = getIntrinsics(config, graph.nodes_.size());
-
+    bool dense_term = config.getValue<bool>("use_dense_term");
     bool is_camera_locked = false;
     for(auto edge : graph.edges_)
     {
@@ -38,49 +38,52 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     for(int i = 0; i < intrinsics.size(); ++i)
         problem.SetParameterBlockConstant(&intrinsics[i](0));
 
-
-    double voxel_size = config.getValue<double>("voxel_size");
-    std::shared_ptr<open3d::geometry::PointCloud> source;
-    std::shared_ptr<open3d::geometry::PointCloud> target;
-    GeometryMethods::createPointCloundFromNodes({graph.nodes_[0]},config,source,true);
-    auto source_down = source->VoxelDownSample(voxel_size);
-
-    for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+    if(dense_term)
     {
+        double voxel_size = config.getValue<double>("voxel_size");
+        std::shared_ptr<open3d::geometry::PointCloud> source;
+        std::shared_ptr<open3d::geometry::PointCloud> target;
+        GeometryMethods::createPointCloundFromNodes({graph.nodes_[0]},config,source,true);
+        auto source_down = source->VoxelDownSample(voxel_size);
 
-        auto node_s = graph.nodes_[i];
-        auto node_t = graph.nodes_[i + 1];
+        for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+        {
+
+            auto node_s = graph.nodes_[i];
+            auto node_t = graph.nodes_[i + 1];
 
 
-        bool sucess = false;
+            bool sucess = false;
 //        sucess = GeometryMethods::createPointCloundFromNodes({node_s},config,source,true);
 //        if(!sucess)
 //            continue;
-        sucess = GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
-        if(!sucess)
-            continue;
+            sucess = GeometryMethods::createPointCloundFromNodes({node_t},config,target,true);
+            if(!sucess)
+                continue;
 
-        auto target_down = target->VoxelDownSample(voxel_size);
+            auto target_down = target->VoxelDownSample(voxel_size);
 
-        target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+            target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
-        auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
-        for(auto corr : result.correspondence_set_)
-        {
-            auto s = corr[0];
-            auto t = corr[1];
-            ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+            auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+            for(auto corr : result.correspondence_set_)
+            {
+                auto s = corr[0];
+                auto t = corr[1];
+                ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
 //            ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,1,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
-            problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
-        }
+                problem.AddResidualBlock(cost_function,NULL,&extrinsics[i](0),&extrinsics[i + 1](0));
+            }
 
-        *source_down = *target_down;
-        if (!is_camera_locked)
-        {
-            problem.SetParameterBlockConstant(&extrinsics[0](0));
-            is_camera_locked = true;
+            *source_down = *target_down;
+            if (!is_camera_locked)
+            {
+                problem.SetParameterBlockConstant(&extrinsics[0](0));
+                is_camera_locked = true;
+            }
         }
     }
+
 
     ceres::Solver::Options options;
 

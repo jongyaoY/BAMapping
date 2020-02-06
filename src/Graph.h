@@ -23,13 +23,14 @@ namespace BAMapping
         void setPoints(PointVector pointVector, Mat4 Tc0w = Mat4::Identity());
         void updateFrames(FrameVector& frameVector);
         void updatePoints(PointVector& pointVector);
-        PointVector copyPoints(const Eigen::Matrix4d Twc0);
-        FrameVector copyFrames(const Eigen::Matrix4d Twc0);
+        PointVector copyPoints(const Eigen::Matrix4d Twc0) const;
+        FrameVector copyFrames(const Eigen::Matrix4d Twc0) const;
         class Node
         {
         public:
             Node(Mat4 Twc) : pose_(Twc){}
             Mat4 pose_;
+            int ite_frame_id;
             std::string rgb_path_;
             std::string depth_path_;
             std::string ir_path_;

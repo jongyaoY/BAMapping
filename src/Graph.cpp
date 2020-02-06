@@ -44,7 +44,7 @@ void Graph::updatePoints(PointVector &pointVector)
     }
 }
 
-PointVector Graph::copyPoints(const Eigen::Matrix4d Twc0)
+PointVector Graph::copyPoints(const Eigen::Matrix4d Twc0) const
 {
     PointVector pointVector;
 
@@ -85,6 +85,7 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
 
         Graph::Node node(Tc0w * frame.getConstTwc());
 
+        node.ite_frame_id = frame.mITEId;
         node.rgb_path_ = frame.getRGBImagePath();
         node.depth_path_ = frame.getDepthImagePath();
         node.ir_path_ = frame.getInfraRedImagePath();
@@ -108,16 +109,18 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
 }
 
 
-FrameVector Graph::copyFrames(const Eigen::Matrix4d Twc0)
+FrameVector Graph::copyFrames(const Eigen::Matrix4d Twc0) const
 {
     FrameVector frameVector;
     for(int i = 0; i < nodes_.size(); i++)
     {
         Frame frame;
+        auto node = nodes_[i];
         auto Tc0cn = nodes_[i].pose_;
         Eigen::Affine3d Twc_affine;
         Twc_affine.matrix() = Twc0 * Tc0cn ;
 
+        frame.mITEId = node.ite_frame_id;
         frame.setFromAffine3d(Twc_affine.inverse());
         frame.setImagePaths(nodes_[i].rgb_path_.c_str(),nodes_[i].depth_path_.c_str(),nodes_[i].ir_path_.c_str());
         frameVector.push_back(frame);
