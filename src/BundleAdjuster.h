@@ -17,7 +17,7 @@ namespace BAMapping
     class BundleAdjuster
     {
     public:
-        static void optimize(Graph& graph, const char* config_file);
+        static void optimize(Graph& graph, const char* config_file,const bool fix_points);
         static void optimizeGlobal(Graph& graph, const char* config_file,
                 const std::vector<std::string>& plyNames = std::vector<std::string>());
         static std::vector<Vec6> packCameraParam(const Graph& graph);

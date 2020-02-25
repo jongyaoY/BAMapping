@@ -179,7 +179,6 @@ Reader::readITEFrames(const char *cam_file, const char *obs_file, const char *da
 
         frame_id = frame_id_temp;
 
-        frame.mITEId = frame_id_temp;
         frame.mGlobalIndex = id;
         id++;
 
@@ -190,6 +189,8 @@ Reader::readITEFrames(const char *cam_file, const char *obs_file, const char *da
         }
         else
             frame_id = cam_id_offset + line;
+
+        frame.mITEId = frame_id;
 
         line++;
 
@@ -254,10 +255,18 @@ Reader::readITEFrames(const char *cam_file, const char *obs_file, const char *da
         obs[1] = static_cast<double>(v);
         obs[2] = d;
 
-        if((cam_id - cam_id_offset) < frameVec.size())
+        for(auto& frame : frameVec)
         {
-            frameVec[cam_id - cam_id_offset].addObservation(point_id,obs);
+            if(frame.mITEId == cam_id)
+            {
+                frame.addObservation(point_id,obs);
+                break;
+            }
         }
+//        if((cam_id - cam_id_offset) < frameVec.size())
+//        {
+//            frameVec[cam_id - cam_id_offset].addObservation(point_id,obs);
+//        }
     }
 
     return frameVec;

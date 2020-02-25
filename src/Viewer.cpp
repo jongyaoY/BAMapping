@@ -21,6 +21,43 @@ namespace BAMapping
         mRefPointColor[1] = 0.;
         mRefPointColor[2] = 1.;
     }
+
+    void Viewer::visualizeMap()
+    {
+        pangolin::CreateWindowAndBind("BAMapping",1024,768);
+
+        // 3D Mouse handler requires depth testing to be enabled
+        glEnable(GL_DEPTH_TEST);
+
+        // Issue specific OpenGl we might need
+        glEnable (GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Define Camera Render Object (for view / scene browsing)
+        pangolin::OpenGlRenderState s_cam(
+                pangolin::ProjectionMatrix(1024,768,510,510,512,389,0.1,1000),
+                pangolin::ModelViewLookAt(0,0,1,0,0,0,pangolin::AxisY)
+        );
+
+        // Add named OpenGL viewport to window and provide 3D Handler
+        pangolin::View& d_cam = pangolin::CreateDisplay()
+                .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175), 1.0, -1024.0f/768.0f)
+                .SetHandler(new pangolin::Handler3D(s_cam));
+
+        pangolin::OpenGlMatrix Twc;
+        Twc.SetIdentity();
+        while( !pangolin::ShouldQuit() )
+        {
+            // Clear screen and activate view to render into
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            d_cam.Activate(s_cam);
+
+            drawMapPoints();
+            // Swap frames and Process Events
+            pangolin::FinishFrame();
+        }
+    }
+
     void Viewer::visualize()
     {
         pangolin::CreateWindowAndBind("BAMapping",1024,768);
@@ -109,6 +146,21 @@ namespace BAMapping
         }
 
 
+    }
+    void Viewer::drawMapPoints()
+    {
+        for(const auto& point : m_pMap->mapPoints_)
+        {
+            GLfloat color[3] = {1,1,0};
+            glPointSize(mPointSize); //cm
+            glBegin(GL_POINTS);
+            glColor3f(color[0],color[1],color[2]);
+
+            glVertex3f(point.pose_[0],point.pose_[1],point.pose_[2]);
+
+            glEnd();
+
+        }
     }
 
     void Viewer::drawPoint(Point point, GLfloat *color)

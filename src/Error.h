@@ -159,10 +159,10 @@ struct ReprojectionError_3D
         p[1] += camera[4];
         p[2] += camera[5];
 
-        const T& fx_ = intrinsics[0];
-        const T& fy_ = intrinsics[1];
-        const T& cx_ = intrinsics[2];
-        const T& cy_ = intrinsics[3];
+        const T& fx_ = T (intrinsics[0]);
+        const T& fy_ = T (intrinsics[1]);
+        const T& cx_ = T (intrinsics[2]);
+        const T& cy_ = T (intrinsics[3]);
 
         const T& u_ = T (u);
         const T& v_ = T (v);
@@ -179,13 +179,13 @@ struct ReprojectionError_3D
 
         T norm = residuals[0]*residuals[0] + residuals[1]*residuals[1] + residuals[2]*residuals[2];
 
-//        printf("%lf %lf %lf, %lf %lf %lf\n",(double)p[0]);
-//        if(sqrt(norm) > T(0.08))
-//        {
+        if(sqrt(norm) > T(0.5))
+        {
+            printf("norm over threshold\n");
 //            residuals[0] = T(0);
 //            residuals[1] = T(0);
 //            residuals[2] = T(0);
-//        }
+        }
         return true;
     }
 

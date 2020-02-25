@@ -7,7 +7,40 @@ Writer::Writer()
 
 }
 
-void Writer::writeToFile(const Graph& graph,const char* cam_filename,const char* point_filename, const char* image_path_file) {
+void Writer::writeToFile(const Graph& graph,const char* cam_filename,const char* point_filename, const char* image_path_file)
+{
+
+}
+
+void Writer::writeToFileTUMFormat(const Graph &graph, const char *cam_filename)
+{
+    FILE* fptr = fopen(cam_filename, "w");
+    float fake_timestamp = 0;
+    for (auto node : graph.nodes_)
+    {
+
+        auto Twc = node.pose_;
+        Eigen::Quaterniond q(Twc.block<3,3>(0,0));
+        Eigen::Vector3d translation = Twc.block<3,1>(0,3);
+
+        fprintf(fptr,"%f %lf %lf %lf %lf %lf %lf %lf\n",
+                fake_timestamp,
+                translation[0],
+                translation[1],
+                translation[2],
+                q.x(),
+                q.y(),
+                q.z(),
+                q.w()
+        );
+        fake_timestamp++;
+    }
+
+    fclose(fptr);
+}
+
+void Writer::writeToFileITEFormat(const Graph &graph, const char *cam_filename, const char *point_filename)
+{
     FILE *fptr = fopen(point_filename, "w");
 
     if (fptr == NULL) {
@@ -23,64 +56,67 @@ void Writer::writeToFile(const Graph& graph,const char* cam_filename,const char*
     }
     fclose(fptr);
 
-    FILE* fptr_img = fopen(image_path_file, "w");
     fptr = fopen(cam_filename, "w");
 
     for (auto node : graph.nodes_)
     {
-        auto ir_path = node.ir_path_;
-        auto rgb_path = node.rgb_path_;
-        auto depth_path = node.depth_path_;
-        fprintf(fptr_img,"%s %s %s\n",ir_path.c_str(),rgb_path.c_str(),depth_path.c_str());
+//        auto ir_path = node.ir_path_;
+//        auto rgb_path = node.rgb_path_;
+//        auto depth_path = node.depth_path_;
+//        fprintf(fptr_img,"%s %s %s\n",ir_path.c_str(),rgb_path.c_str(),depth_path.c_str());
         auto Twc = node.pose_;
         Eigen::Quaterniond q(Twc.block<3,3>(0,0));
         Eigen::Vector3d translation = Twc.block<3,1>(0,3);
 
         fprintf(fptr,"%d %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
-        node.ite_frame_id,
-        q.w(),
-        q.x(),
-        q.y(),
-        q.z(),
-        translation[0],
-        translation[1],
-        translation[2],
-        0.0,
-        0.0);
+                node.ite_frame_id,
+                q.w(),
+                q.x(),
+                q.y(),
+                q.z(),
+                translation[0],
+                translation[1],
+                translation[2],
+                0.0,
+                0.0);
     }
 
-//    for(auto frame : frames)
-//    {
-//        auto Twc = frame.getConstTwc();
-//        int frame_id = frame.mITEId;
-//        Eigen::Quaterniond q;
-//        q.matrix() = Twc.block<3,3>(0,0);
-//        const Eigen::Vector3d translation = frame.getConstTranslation();
-//
-//        fprintf(fptr,"%d %lf %lf %lf %lf %lf %lf %lf\n",frame_id,
-//                q.w(),
-//                q.x(),
-//                q.y(),
-//                q.z(),
-//                translation[0],
-//                translation[1],
-//                translation[2]);
-//    }
-//    for(auto frame : frames)
-//    {
-//        const double angle = frame.getConstAngleAxis().angle();
-//        const double angleAxis[3] = {angle*frame.getConstAngleAxis().axis()[0],
-//                                     angle*frame.getConstAngleAxis().axis()[1],
-//                                     angle*frame.getConstAngleAxis().axis()[2]};
-//        const Eigen::Vector3d translation = frame.getConstTranslation();
-//
-//        fprintf(fptr,"%lf %lf %lf %lf %lf %lf\n",angleAxis[0],
-//                                                 angleAxis[1],
-//                                                 angleAxis[2],
-//                                                 translation[0],
-//                                                 translation[1],
-//                                                 translation[2]);
-//    }
     fclose(fptr);
-    fclose(fptr_img);
+}
+
+void Writer::writeObservations(const FrameVector &frameVector, const char *obs_filename)
+{
+    FILE* fptr = fopen(obs_filename, "w");
+    for(const auto& frame : frameVector)
+    {
+        auto frame_id = frame.mITEId;
+        for(const auto& obs : frame.mObservations)
+        {
+            auto point_id = obs.first;
+            auto obs_vec = obs.second;
+            int u = static_cast<int>(obs_vec[0]);
+            int v = static_cast<int>(obs_vec[1]);
+            float d = static_cast<float>(obs_vec[2]);
+
+            fprintf(fptr,"%lu %lu %d %d %f\n",point_id,frame_id,u,v,d);
+        }
+    }
+    fclose(fptr);
+}
+
+void Writer::writePoints(const Frontend::Map &map, const char* point_filename)
+{
+    FILE* fptr = fopen(point_filename, "w");
+    for(int i = 0; i < map.mapPoints_.size(); i++)
+    {
+        const auto& point = map.mapPoints_[i];
+        auto x = static_cast<float> (point.pose_[0]);
+        auto y = static_cast<float> (point.pose_[1]);
+        auto z = static_cast<float> (point.pose_[2]);
+
+        fprintf(fptr,"%d %f %f %f\n",i,x,y,z);
+    }
+    fclose(fptr);
+
+
 }

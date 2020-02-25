@@ -4,19 +4,10 @@
 
 #include <iostream>
 #include "Frame.h"
+#include "opencv2/opencv.hpp"
+#include "opencv2/features2d.hpp"
 using namespace BAMapping;
 
-void Frame::getMutable(double* param)
-{
-    for(int i = 0; i < 3; i++)
-    {
-        *(param + i) = m_angleAxis.angle()*m_angleAxis.axis()[i];
-    }
-    for(int i = 0; i < 3; i++)
-    {
-        *(param + i + 3) = m_translation[i];
-    }
-}
 
 std::map<size_t, Eigen::Vector3d> Frame::getObservations()
 {
@@ -109,44 +100,34 @@ void Frame::setFromAffine3d(Eigen::Affine3d Tcw)
     Converter::Affine3dTcwToAngleAxisAndPoint(Tcw,m_angleAxis,m_translation);
 }
 
-//FrameVector FrameMethods::filterFrames(const char *config_file, const FrameVector &in_frameVector)
-//{
-//
-//    Parser config(config_file);
-//    FrameVector out_frameVector;
-//    if(in_frameVector.empty())
-//        return out_frameVector;
-//
-//    auto n_key_points_thres = config.getValue<int>("Frame.n_key_points_thres");
-//    auto tracked_key_points_percentage_thres = config.getValue<double>("Frame.tracked_key_points_percentage_thres");
-//
-//    auto ref_frame = in_frameVector[0];
-//    for(auto frame : in_frameVector)
-//    {
-//        auto ref_tracked_points = ref_frame.getObservedPointsIds();
-//        auto tracked_points = frame.getObservedPointsIds();
-//        ref_tracked_points.sort();
-//        tracked_points.sort();
-//        std::set<int> intersect;
-//        std::set_intersection(ref_tracked_points.begin(),ref_tracked_points.end(),tracked_points.begin(),tracked_points.end(),
-//                        std::inserter(intersect,intersect.begin()));
-//        double percentage = (double) intersect.size()/(double) ref_tracked_points.size();
-//        if(tracked_points.size() > n_key_points_thres
-//        &&percentage <  tracked_key_points_percentage_thres)
-//        {
-//            ref_frame = frame;
-//            out_frameVector.push_back(frame);
-//        }
-//    }
-//
-//    return out_frameVector;
-//}
+
+void Frame::generateObservations()
+{
+    using namespace cv;
+    Mat depth_img = imread(m_depthImgPath,IMREAD_UNCHANGED);
+    depth_img.convertTo(depth_img,CV_32F);
+    depth_img /= 1000.0; //todo
+    mObservations.clear();
+    for(int i = 0; i < mKeypoints.size(); i++)
+    {
+        const auto& point = mKeypoints[i];
+        const auto id = mKeyPointGlobalIds[i];
+        if(id < 0) // invalid point
+        {
+            continue;
+        }
+        double u = point.pt.x;
+        double v = point.pt.y;
+        double d = depth_img.at<float>(point.pt);
+        mObservations.emplace(id,Eigen::Vector3d(u,v,d));
+    }
+}
 
 //intrisic parameters
-double Frame::m_fx;
-double Frame::m_fy;
-double Frame::m_cx;
-double Frame::m_cy;
+double Frame::m_fx = 431.828094;
+double Frame::m_fy = 431.828094;
+double Frame::m_cx = 323.000610;
+double Frame::m_cy = 240.218506;
 //distortion coefficients
 double Frame::m_k1;
 double Frame::m_k2;

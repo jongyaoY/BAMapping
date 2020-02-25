@@ -5,11 +5,12 @@
 #include "BundleAdjuster.h"
 //#include "imu_factor.h"
 #include "PhotoGeoFactor.h"
+#include "ReprojectionFactor.h"
 #include "GeometryMethods.h"
 
 using namespace BAMapping;
 
-void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* config_file)
+void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* config_file,const bool fix_points)
 {
     Parser config(config_file);
     ceres::Problem problem;
@@ -18,25 +19,52 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
     auto intrinsics = getIntrinsics(config, graph.nodes_.size());
     bool dense_term = config.getValue<bool>("use_dense_term");
     bool is_camera_locked = false;
+//    for(int i = 0; i < extrinsics.size(); i++)
+//    {
+//        problem.AddParameterBlock(&extrinsics[i](0),6);
+//    }
+    problem.AddParameterBlock(&extrinsics[0](0),6);
+//    for(int i = 0; i < intrinsics.size(); i++)
+//    {
+//        problem.AddParameterBlock(&intrinsics[i](0),4);
+//    }
+//    for(int i = 0; i < points.size(); i++)
+//    {
+//        problem.AddParameterBlock(&points[i](0),3);
+//    }
+
     for(auto edge : graph.edges_)
     {
         auto cam_id = edge.node_id_;
         auto point_id = edge.point_id_;
         auto obs = edge.obs_;
 
+
+
+//        ReprojectionFactor* cost_function = new ReprojectionFactor(intrinsics[cam_id],obs);
+//        problem.AddResidualBlock(cost_function,NULL,&extrinsics[cam_id](0), &points[point_id](0));
         ceres::CostFunction* cost_function = ReprojectionError_3D::Create(obs[0],obs[1],obs[2]);
         problem.AddResidualBlock(cost_function,NULL, &intrinsics[cam_id](0), &extrinsics[cam_id](0), &points[point_id](0));
 
-
+        problem.SetParameterBlockConstant(&intrinsics[cam_id](0));
         if (!is_camera_locked)
         {
             problem.SetParameterBlockConstant(&extrinsics[0](0));
             is_camera_locked = true;
         }
+//        if(fix_points)
+//        {
+//            problem.SetParameterBlockConstant(&points[point_id](0));
+//
+//        }
+        if(graph.points_[point_id].is_seperator_)
+        {
+            problem.SetParameterBlockConstant(&points[point_id](0));
+        }
     }
 
-    for(int i = 0; i < intrinsics.size(); ++i)
-        problem.SetParameterBlockConstant(&intrinsics[i](0));
+//    for(int i = 0; i < intrinsics.size(); ++i)
+//        problem.SetParameterBlockConstant(&intrinsics[i](0));
 
     if(dense_term)
     {
@@ -91,9 +119,14 @@ void BAMapping::BundleAdjuster::optimize(BAMapping::Graph &graph, const char* co
 //    options.preconditioner_type = ceres::SCHUR_JACOBI;
 //    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
 //    options.use_inner_iterations = true;
-    options.minimizer_type = ceres::TRUST_REGION;
-    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
+//    options.minimizer_type = ceres::TRUST_REGION;
+//    options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
+//    options.dogleg_type = ceres::SUBSPACE_DOGLEG;//TRADITIONAL_DOGLEG;
+
+    options.use_nonmonotonic_steps = true;
+    options.preconditioner_type = ceres::SCHUR_JACOBI;
+    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+    options.use_inner_iterations = true;
     options.max_num_iterations = 30;
     options.minimizer_progress_to_stdout = true;
 
@@ -120,7 +153,8 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
         auto point_id = edge.point_id_;
         auto obs = edge.obs_;
 
-
+//        if(!graph.points_[point_id].is_seperator_)
+//            continue;
         ceres::CostFunction* cost_function = AlignmentError_3D_Direct::Create(obs[0],obs[1],obs[2]);
         ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,sparse_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
 
@@ -132,6 +166,8 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
             is_camera_locked = true;
         }
     }
+
+
     if(!plyNames.empty())
     {
         double voxel_size = config.getValue<double>("voxel_size");

@@ -12,16 +12,16 @@
 #include <list>
 #include <set>
 
-
+#include "Point.h"
 #include "util/Converter.h"
 #include "util/Parser.h"
+#include "opencv2/core.hpp"
 namespace BAMapping
 {
     class Frame
     {
     public:
         typedef std::shared_ptr<Frame> Ptr;
-
         Frame() = default;
         void setAngleAxisAndPoint(Eigen::AngleAxisd angleAxis,Eigen::Vector3d point);
         void setFromQuaternionAndPoint(Eigen::Quaterniond q, Eigen::Vector3d point);
@@ -37,9 +37,7 @@ namespace BAMapping
         bool isPointObserved(size_t global_point_id);
         std::list<size_t> getObservedPointsIds();
         Eigen::Vector3d getObservationByPointIndex(size_t global_point_id);
-        void getIntrinsics(double& fx,double& fy,double& cx,double& cy);
         std::map<size_t ,Eigen::Vector3d> getObservations();
-        void getMutable(double* param);
         const Eigen::Matrix4d getConstTwc() const;
         const Eigen::Matrix4d getConstTcw() const;
         const Eigen::AngleAxisd getConstAngleAxis();
@@ -51,8 +49,23 @@ namespace BAMapping
         inline std::string getDepthImagePath()const {return m_depthImgPath;}
         inline std::string getInfraRedImagePath()const {return m_infraRedImgPath;}
 
+        void generateObservations();
+
         size_t mGlobalIndex;
-        int mITEId;
+        std::vector<long> mKeyPointGlobalIds;
+        std::vector<bool> keyPoint_has_match;
+        std::vector<cv::KeyPoint> mKeypoints;
+        cv::Mat mDescriptior;
+        std::vector<cv::Mat> mKepoint_descriptors;
+        std::map<size_t ,Eigen::Vector3d> mObservations;
+        size_t mITEId;
+
+        //intrisic parameters
+        static double m_fx;
+        static double m_fy;
+        static double m_cx;  //principle point x
+        static double m_cy;  //principle point y
+
     private:
         double mTimeStamp;
         std::string m_rgbImgPath;
@@ -61,17 +74,11 @@ namespace BAMapping
         //for optimization
         Eigen::AngleAxisd m_angleAxis;
         Eigen::Vector3d m_translation;
-        std::map<size_t ,Eigen::Vector3d> mObservations;
 
-        //intrisic parameters
-        static double m_fx;
-        static double m_fy;
-        static double m_cx;  //principle point x
-        static double m_cy;  //principle point y
+
         //distortion coefficients
         static double m_k1;   //(u',v') = (cx,cy) + (1 + k1*r^2 + k2*r^4)*(u-cx,v-cy);
         static double m_k2;   //r^2 = (u - cx)^2 + (v - cy)^2
-
 
     };
     typedef std::vector<Frame> FrameVector;
@@ -121,6 +128,72 @@ namespace BAMapping
 
             return out_frameVector;
         }
+
+        static void filterObservations(FrameVector& frameVector, PointVector& pointVector, const char* config_file)
+        {
+            Parser config(config_file);
+
+            double diff_thres = config.getValue<double>("correspondence_diff_thres");
+            double fx = config.getValue<double>("Camera.fx");
+            double fy = config.getValue<double>("Camera.fy");
+            double cx = config.getValue<double>("Camera.cx");
+            double cy = config.getValue<double>("Camera.cy");
+
+
+
+            for(auto& frame : frameVector)
+            {
+                Eigen::Affine3d Twc;
+                Twc.matrix() = frame.getConstTwc();
+
+                std::map<size_t ,Eigen::Vector3d>::iterator it = frame.mObservations.begin();
+                for(; it != frame.mObservations.end(); it++)
+                {
+                    auto point_id = it->first;
+                    auto obs = it->second;
+                    Eigen::Vector3d p_obs;
+                    Eigen::Vector3d p_world;
+                    Eigen::Vector3d diff;
+
+                    p_obs[0] = (obs[0]-cx)*obs[2]/fx;
+                    p_obs[1] = (obs[1]-cy)*obs[2]/fy;
+                    p_obs[2] = obs[2];
+
+//                    p_obs = Twc * p_obs;
+                    p_world = pointVector[point_id].getPoseInWorld();
+                    p_world = Twc.inverse() * p_world;
+                    diff = p_obs - p_world;
+                    if(sqrt(diff.dot(diff)) > diff_thres)
+                    {
+                        frame.mObservations.erase(it);
+                        printf("removed obs, diff: %lf\n", sqrt(diff.dot(diff)));
+                    }
+                }
+            }
+
+            int i = 0;
+            for(FrameVector::iterator it = frameVector.begin() + 1; it != frameVector.end(); it++)
+            {
+                if(it->getObservations().size() < 15)
+                {
+                    printf("removed %d\n",i);
+                    if(frameVector.size()>10)
+                        frameVector.erase(it);
+                }
+                i++;
+            }
+
+//            Eigen::Affine3d Twc0;
+//            Twc0.matrix() = frameVector[0].getConstTwc();
+//            for(auto& point : pointVector)
+//            {
+//                auto pose = point.getPoseInWorld();
+//                pose = Twc0 * pose;
+//                point.setPoint(pose);
+//            }
+        }
+
+        static void findCorrespondence();
     }
 
 }//end of namespace

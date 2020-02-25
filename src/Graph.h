@@ -19,12 +19,12 @@ namespace BAMapping
         static Graph generateGlobalGraph(const size_t n_overlap, const Graph& graph, const std::vector<Graph>& subgraphs);
         static Graph generateResultGraph(const size_t n_overlap, const Graph& globalgraph, const std::vector<Graph>& subgraphs);
         void setGraph(FrameVector frameVector, PointVector pointVector);
-        void setNodesFromeFrames(FrameVector frameVector);
-        void setPoints(PointVector pointVector, Mat4 Tc0w = Mat4::Identity());
-        void updateFrames(FrameVector& frameVector);
-        void updatePoints(PointVector& pointVector);
+
+        int isPointObserved(size_t global_point_id);
         PointVector copyPoints(const Eigen::Matrix4d Twc0) const;
         FrameVector copyFrames(const Eigen::Matrix4d Twc0) const;
+
+        static void markSeperators(const Graph& global_graph,std::vector<Graph>& subgraphs);
         class Node
         {
         public:
@@ -38,9 +38,10 @@ namespace BAMapping
         class Point
         {
         public:
-            Point(Vec3 pose) : pose_(pose){ }
+            Point(Vec3 pose) : pose_(pose),is_seperator_(false){ }
             Vec3 pose_;
             size_t global_id;
+            bool is_seperator_;
         };
         class Edge
         {

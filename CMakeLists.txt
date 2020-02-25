@@ -44,9 +44,11 @@ include_directories(${Pangolin_INCLUDE_DIRS})
 #include_directories(${CPUTSDF_INCLUDE_DIRS})
 #link_directories(${CPUTSDF_LIBRARY_DIRS})
 
+find_package(DBoW2 REQUIRED PATHS libs/dbow_lib/lib/cmake)
+include_directories(${DBoW2_INCLUDE_DIRS})
 
-find_package( OpenCV REQUIRED)
-include_directories( ${OpenCV_INCLUDE_DIRS} )
+find_package( OpenCV 3.4.8 EXACT REQUIRED PATHS libs/opencv_lib/share NO_DEFAULT_PATH)
+include_directories( ${OpenCV_INCLUDE_DIRS})
 
 find_package(Open3D REQUIRED PATHS libs/open3d_lib/lib/cmake)
 list(APPEND Open3D_LIBRARIES dl)
@@ -72,6 +74,7 @@ add_library(${PROJECT_NAME} SHARED
 #            src/Writer.cpp
             src/Integrater.cpp
 #new
+            src/Frontend.cpp
             src/Graph.cpp
             src/Graph.h
             src/Frame.cpp
@@ -88,9 +91,10 @@ target_link_libraries(${PROJECT_NAME}
                                  ceres
 #                                 ${CHOLMOD_LIBRARIES}
 #                                 ${GFLAGS_LIBRARIES}
+                                 ${DBoW2_LIBRARIES}
                                  ${Pangolin_LIBRARIES}
                                  ${Open3D_LIBRARIES}
-#                                 ${OpenCV_LIBS}
+                                 ${OpenCV_LIBS}
                         )
 
 #add_executable(System src/System.cpp)
@@ -117,6 +121,11 @@ add_executable(test_Submap src/tests/test_Submap.cpp)
 
 target_link_libraries(test_Submap ${PROJECT_NAME}
                                   ${Open3D_LIBRARIES})
+
+add_executable(test_correspondence src/tests/test_correspondence.cpp)
+
+target_link_libraries(test_correspondence ${PROJECT_NAME}
+                                    ${Open3D_LIBRARIES})
 
 
 
