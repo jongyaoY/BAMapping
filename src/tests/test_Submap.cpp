@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     std::string init_cam_file_tum_format = dataset_path + "init_tum_format.txt";
     std::string result_cam_file_tum_format = dataset_path + "result_tum_format.txt";
 
-    FrameMethods::filterObservations(frameVec,ref_pointVec,config_file.c_str());
+//    FrameMethods::filterObservations(frameVec,ref_pointVec,config_file.c_str());
 //    auto key_frames = FrameMethods::filterFrames(config_file.c_str(),frameVec);
     std::cout<<frameVec.size()<<std::endl;
 //    std::cout<<key_frames.size()<<std::endl;
@@ -35,6 +35,86 @@ int main(int argc, char** argv)
     Graph graph;
     graph.setGraph(frameVec,ref_pointVec);
     Parser config(config_file);
+
+
+    bool use_submap = config.getValue<bool>("use_submap");
+
+    if(use_submap)
+    {
+        int n = config.getValue<int>("n_frames_per_fragment");
+        auto subgraphs = Graph::spliteIntoSubgraphs(n,0,graph);
+        int id = 0;
+        std::string temp_path = dataset_path + "temp/";
+        std::vector<std::string> plyNames;
+        for(auto& subgraph : subgraphs)
+        {
+            std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
+            std::string plyName = temp_path + "fragment" + std::to_string(id)+".ply";
+            BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
+            Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
+
+            plyNames.push_back(plyName);
+            auto pointVec_ = subgraph.copyPoints(frameVec.front().getConstTwc());
+            auto frames_ = subgraph.copyFrames(frameVec.front().getConstTwc());
+            id++;
+//            Viewer viewer_;
+//            viewer_.setFrames(frames_);
+//            viewer_.setPoints(pointVec_);
+//            viewer_.setRefPoints(ref_pointVec);
+//            viewer_.visualize();
+        }
+
+        auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
+        BundleAdjuster::optimizeGlobal(globalgraph, config_file.c_str(),plyNames);
+
+//        Graph::markSeperators(globalgraph,subgraphs);
+//        for(auto& subgraph : subgraphs)
+//        {
+//            std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
+//            BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
+//
+//        }
+
+        auto resultGraph = Graph::generateResultGraph(0,globalgraph,subgraphs);
+
+
+        auto pointVec = resultGraph.copyPoints(frameVec.front().getConstTwc());
+        auto frames = resultGraph.copyFrames(frameVec.front().getConstTwc());
+        Viewer viewer;
+        viewer.setFrames(frames);
+        viewer.setPoints(pointVec);
+        viewer.setRefPoints(ref_pointVec);
+        viewer.visualize();
+
+        Integrater::integrateGraph(resultGraph,config_file.c_str(),mesh_file.c_str(),false,frameVec.front().getConstTwc(),true);
+
+    }
+    else
+    {
+
+//        Writer::writeToFileTUMFormat(graph,init_cam_file_tum_format.c_str());
+        std::cout<<"read point: "<<ref_pointVec.size()<<std::endl;
+        std::cout<<"point in graph: "<<graph.points_.size()<<std::endl;
+        BundleAdjuster::optimize(graph, config_file.c_str(),false);
+//        Writer::writeToFile(graph, output_cam_file.c_str(),output_point_file.c_str(),output_image_path_file.c_str());
+//        Writer::writeToFileTUMFormat(graph,result_cam_file_tum_format.c_str());
+
+        auto pointVec = graph.copyPoints(frameVec.front().getConstTwc());
+        auto frames = graph.copyFrames(frameVec.front().getConstTwc());
+        Viewer viewer;
+        viewer.setFrames(frames);
+        viewer.setPoints(pointVec);
+        viewer.setRefPoints(ref_pointVec);
+        viewer.visualize();
+
+        Integrater::integrateGraph(graph,config_file.c_str(),mesh_file.c_str(),false,frameVec.front().getConstTwc(),true);
+    }
+
+
+
+
+}
+
 
 //    auto pointVec = graph.copyPoints(frameVec.front().getConstTwc());
 //    auto frames = graph.copyFrames(frameVec.front().getConstTwc());
@@ -89,74 +169,3 @@ int main(int argc, char** argv)
 //
 //        Integrater::integrateGraph(graph,config_file.c_str(),mesh_file.c_str(),false,graph.nodes_[0].pose_,true);
 //    }
-
-    bool use_submap = config.getValue<bool>("use_submap");
-
-    if(use_submap)
-    {
-        int n = config.getValue<int>("n_frames_per_fragment");
-        auto subgraphs = Graph::spliteIntoSubgraphs(n,0,graph);
-        int id = 0;
-        std::string temp_path = dataset_path + "temp/";
-        std::vector<std::string> plyNames;
-        for(auto& subgraph : subgraphs)
-        {
-            std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
-            std::string plyName = temp_path + "fragment" + std::to_string(id)+".ply";
-            BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
-////        Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
-//
-////        plyNames.push_back(plyName);
-            id++;
-        }
-
-        auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
-        BundleAdjuster::optimizeGlobal(globalgraph, config_file.c_str(),plyNames);
-
-        Graph::markSeperators(globalgraph,subgraphs);
-        for(auto& subgraph : subgraphs)
-        {
-            std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
-            BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
-
-        }
-
-        auto resultGraph = Graph::generateResultGraph(0,globalgraph,subgraphs);
-
-
-        auto pointVec = resultGraph.copyPoints(frameVec.front().getConstTwc());
-        auto frames = resultGraph.copyFrames(frameVec.front().getConstTwc());
-//        Viewer viewer;
-//        viewer.setFrames(frames);
-//        viewer.setPoints(pointVec);
-//        viewer.setRefPoints(ref_pointVec);
-//        viewer.visualize();
-
-        Integrater::integrateGraph(resultGraph,config_file.c_str(),mesh_file.c_str(),false,frameVec.front().getConstTwc(),true);
-
-    }
-    else
-    {
-
-//        Writer::writeToFileTUMFormat(graph,init_cam_file_tum_format.c_str());
-        std::cout<<"read point: "<<ref_pointVec.size()<<std::endl;
-        std::cout<<"point in graph: "<<graph.points_.size()<<std::endl;
-        BundleAdjuster::optimize(graph, config_file.c_str(),false);
-//        Writer::writeToFile(graph, output_cam_file.c_str(),output_point_file.c_str(),output_image_path_file.c_str());
-//        Writer::writeToFileTUMFormat(graph,result_cam_file_tum_format.c_str());
-
-        auto pointVec = graph.copyPoints(frameVec.front().getConstTwc());
-        auto frames = graph.copyFrames(frameVec.front().getConstTwc());
-        Viewer viewer;
-        viewer.setFrames(frames);
-        viewer.setPoints(pointVec);
-        viewer.setRefPoints(ref_pointVec);
-        viewer.visualize();
-
-        Integrater::integrateGraph(graph,config_file.c_str(),mesh_file.c_str(),false,frameVec.front().getConstTwc(),true);
-    }
-
-
-
-
-}

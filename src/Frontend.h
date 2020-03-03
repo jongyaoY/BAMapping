@@ -7,6 +7,7 @@
 
 #include "Frame.h"
 //#include "Viewer.h"
+#include "MapPoint.h"
 #include "DBoW2.h"
 #include "math/Types.h"
 #include "opencv2/core.hpp"
@@ -18,21 +19,12 @@ namespace BAMapping
     class Frontend
     {
     public:
-        class MapPoint
-        {
-        public:
-            MapPoint() {}
-            MapPoint(Vec3 pose):pose_(pose){ }
-            Vec3 pose_;
-            cv::Mat descritor_;
-        };
         class Map
         {
         public:
             Map()
             {
                 matcher_ = new cv::FlannBasedMatcher(cv::makePtr<cv::flann::LshIndexParams>(12, 20, 2));
-//                matcher_ = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
             }
             void init(const cv::Mat& descriptors,const std::vector<MapPoint>& mapPoints)
             {
@@ -43,19 +35,12 @@ namespace BAMapping
             void addPoints(const std::vector<MapPoint>& mapPoints)
             {
                 mapPoints_.insert(mapPoints_.end(),mapPoints.begin(),mapPoints.end());
-//                cv::Mat descriptors;
-//                for(const auto& point : mapPoints)
-//                {
-//                    descriptors.push_back(point.descritor_);
-//                }
-//                matcher_->add(descriptors);
-//                matcher_->train();
+
             }
             void addMapPoint(MapPoint point)
             {
                 mapPoints_.push_back(point);
-//                matcher_->add(point.descritor_);
-//                matcher_->train();
+
             }
             void matchFeatures(const cv::Mat &query, std::vector<cv::DMatch> &goodMatches)
             {
@@ -78,25 +63,62 @@ namespace BAMapping
             std::vector<MapPoint> mapPoints_;
             cv::Ptr<cv::FlannBasedMatcher> matcher_;
         };
-        void ExtractAllFeaturesAndTrainMatcher(FrameVector& frameVector);
-        static void ExtractAllFeaturesAndCreateDB(FrameVector& frameVector, std::string db_name);
-        static void ExtractFeatures(FrameVector& frameVector);
+
+        class MotionModel
+        {
+        public:
+            MotionModel() {}
+//            MotionModel(const FrameVector& frameVector)
+//            {
+//                for(const auto& frame : frameVector)
+//                {
+//                    node_Twc.push_back(frame.getConstTwc());
+//                }
+//            }
+            void init(const FrameVector& frameVector)
+            {
+                for(const auto& frame : frameVector)
+                {
+                    node_Twc.push_back(frame.getConstTwc());
+                }
+            }
+            Mat4 getTij(size_t i, size_t j)
+            {
+                if(i > node_Twc.size() || j > node_Twc.size())
+                {
+                    std::cout<<"node id exceeds"<<std::endl;
+                    return Mat4::Identity();
+                }
+                auto Tiw = node_Twc[i].inverse();
+                auto Twj = node_Twc[j];
+                return Tiw * Twj;
+            }
+
+            std::vector<Mat4> node_Twc;
+        private:
+        };
+
         void ExtractORB(Frame& frame,cv::Ptr<cv::ORB> orb_detector);
-        void CreatePointCloud(FrameVector& frameVector);
-        void ExtractAndMatchFeatures(FrameVector& frameVector);
+        void ExtractAndMatchFeatures(FrameVector& frameVector, const std::string voc_path);
         void query(const Frame& frame,std::vector<cv::DMatch> &goodMatches);
         Map mMap;
+
     private:
         bool createNewPoint(MapPoint& mapPoint, const cv::KeyPoint& point, const cv::Mat& descriptor,const Frame& frame, const cv::Mat& depth_img, const double depth_thres = 3.0);
 
-        void initMap(Frame& first_frame);
-
-        void updateMap(Frame& frame, const Frame& ref_frame, std::vector<cv::DMatch> matches);
+        void updateMap(Frame& frame,
+                Frame& ref_frame, const std::vector<cv::DMatch>& matches);
 
         void matchORB(const cv::Mat &query, const cv::Mat &target,
                       std::vector<cv::DMatch> &goodMatches);
-        void matchFeatures(const cv::Mat &query, const cv::Mat &target,
-                                std::vector<cv::DMatch> &goodMatches);
+
+        void alignFrames(Frame& frame, const Mat4 last_Twc ,const Frame& ref_frame,const std::vector<cv::DMatch>& matches);
+
+        void removeOutliers(const Frame& frame_query, const Frame& frame_train, std::vector<cv::DMatch>& matches, const double thres = 0.5);
+
+        void triangulateKeyPoints(const Frame& frame, const Frame& ref_frame, const std::vector<cv::DMatch>& matches, std::vector<MapPoint>& mapPoints);
+
+        MotionModel motionModel_;
 
     };
 }

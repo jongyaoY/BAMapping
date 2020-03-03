@@ -17,6 +17,9 @@ namespace BAMapping
     class BundleAdjuster
     {
     public:
+        static void optimizePose(Mat4& Tcw, const Vec4& intrinsics, const std::vector<Vec3>& obs_vec, const std::vector<Vec3>& ref_points);
+        static void optimizePose(Mat4& Twc, const Mat4& Twc_ref,const Vec4& intrinsics, const std::vector<Vec3>& obs_vec, const std::vector<Vec3>& ref_obs_vec);
+
         static void optimize(Graph& graph, const char* config_file,const bool fix_points);
         static void optimizeGlobal(Graph& graph, const char* config_file,
                 const std::vector<std::string>& plyNames = std::vector<std::string>());

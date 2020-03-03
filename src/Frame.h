@@ -12,6 +12,7 @@
 #include <list>
 #include <set>
 
+#include "MapPoint.h"
 #include "Point.h"
 #include "util/Converter.h"
 #include "util/Parser.h"
@@ -52,9 +53,10 @@ namespace BAMapping
         void generateObservations();
 
         size_t mGlobalIndex;
-        std::vector<long> mKeyPointGlobalIds;
+        std::vector<size_t> mKeyPointGlobalIds;
         std::vector<bool> keyPoint_has_match;
         std::vector<cv::KeyPoint> mKeypoints;
+        std::vector<MapPoint::Ptr> mpMapPoints;
         cv::Mat mDescriptior;
         std::vector<cv::Mat> mKepoint_descriptors;
         std::map<size_t ,Eigen::Vector3d> mObservations;
@@ -139,13 +141,11 @@ namespace BAMapping
             double cx = config.getValue<double>("Camera.cx");
             double cy = config.getValue<double>("Camera.cy");
 
-
-
             for(auto& frame : frameVector)
             {
                 Eigen::Affine3d Twc;
                 Twc.matrix() = frame.getConstTwc();
-
+                std::map<size_t ,Eigen::Vector3d> new_obs_vec;
                 std::map<size_t ,Eigen::Vector3d>::iterator it = frame.mObservations.begin();
                 for(; it != frame.mObservations.end(); it++)
                 {
@@ -165,32 +165,48 @@ namespace BAMapping
                     diff = p_obs - p_world;
                     if(sqrt(diff.dot(diff)) > diff_thres)
                     {
-                        frame.mObservations.erase(it);
+//                        frame.mObservations.erase(it);
                         printf("removed obs, diff: %lf\n", sqrt(diff.dot(diff)));
                     }
+                    else
+                    {
+                        new_obs_vec.emplace(*it);
+                    }
                 }
+                frame.mObservations.clear();
+                frame.mObservations = new_obs_vec;
             }
 
             int i = 0;
-            for(FrameVector::iterator it = frameVector.begin() + 1; it != frameVector.end(); it++)
+            FrameVector out_frameVector;
+
+            for(const auto& frame : frameVector)
             {
-                if(it->getObservations().size() < 15)
+                if(frame.mObservations.size() < 15)
                 {
-                    printf("removed %d\n",i);
-                    if(frameVector.size()>10)
-                        frameVector.erase(it);
+                    printf("removed %d, size : %lu\n",i, frame.mObservations.size());
+                }
+                else
+                {
+                    out_frameVector.push_back(frame);
                 }
                 i++;
             }
-
-//            Eigen::Affine3d Twc0;
-//            Twc0.matrix() = frameVector[0].getConstTwc();
-//            for(auto& point : pointVector)
+//            for(FrameVector::iterator it = frameVector.begin(); it != frameVector.end(); it++)
 //            {
-//                auto pose = point.getPoseInWorld();
-//                pose = Twc0 * pose;
-//                point.setPoint(pose);
+//                if(it->mObservations.size() < 15)
+//                {
+//                    printf("removed %d\n",i);
+//                }
+//                else
+//                {
+//                    out_frameVector.push_back(*it);
+//                }
+//                i++;
 //            }
+            frameVector.clear();
+            frameVector = out_frameVector;
+
         }
 
         static void findCorrespondence();

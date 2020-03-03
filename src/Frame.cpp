@@ -105,21 +105,24 @@ void Frame::generateObservations()
 {
     using namespace cv;
     Mat depth_img = imread(m_depthImgPath,IMREAD_UNCHANGED);
-    depth_img.convertTo(depth_img,CV_32F);
-    depth_img /= 1000.0; //todo
+    depth_img.convertTo(depth_img,CV_32F,1.0/1000.0); //todo
     mObservations.clear();
+    if(mKeyPointGlobalIds.size() != mKeypoints.size())
+    {
+        std::cout<<"genrate observation aborted, inequal sizes"<<std::endl;
+    }
     for(int i = 0; i < mKeypoints.size(); i++)
     {
         const auto& point = mKeypoints[i];
-        const auto id = mKeyPointGlobalIds[i];
-        if(id < 0) // invalid point
+        const auto pmapPoint = mpMapPoints[i];
+        if(pmapPoint == NULL) // invalid point
         {
             continue;
         }
         double u = point.pt.x;
         double v = point.pt.y;
         double d = depth_img.at<float>(point.pt);
-        mObservations.emplace(id,Eigen::Vector3d(u,v,d));
+        mObservations.insert(std::pair<size_t,Eigen::Vector3d>( pmapPoint->id,Eigen::Vector3d(u,v,d)));
     }
 }
 

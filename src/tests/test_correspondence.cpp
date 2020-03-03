@@ -7,33 +7,73 @@
 #include "../io/Writer.h"
 #include "../Graph.h"
 #include "../Viewer.h"
-
+#include "DBoW2.h"
 int main(int argc, char** argv)
 {
     using namespace BAMapping;
     std::string dataset_path = "../dataset/ITE_Office/";
-    std::string db_path = dataset_path + "feature_db.yml.gz";
+    std::string voc_path = dataset_path + "ORBvoc.txt";
     std::string obs_path = dataset_path + "observations.txt";
     std::string point_path = dataset_path + "points.txt";
-    std::string cam_file = argv[1];
-    auto frameVec = io::Reader::readITEFrames((dataset_path + cam_file).c_str(),
+    std::string cam_file = dataset_path + argv[1];
+    std::string cam_out_file = dataset_path + "cameras_out.txt";
+    std::string config_file = dataset_path + "ITE.yaml";
+    auto frameVec = io::Reader::readITEFrames(cam_file.c_str(),
                                               (dataset_path + "observations.txt").c_str(),
                                               dataset_path.c_str(),1);
 
     Frontend frontend;
-//    frontend.ExtractAllFeaturesAndCreateDB(frameVec,db_path);
-//    frontend.ExtractAllFeaturesAndTrainMatcher(frameVec);
+    frontend.ExtractAndMatchFeatures(frameVec,voc_path);
 
-    frontend.ExtractAndMatchFeatures(frameVec);
-    for(auto& frame : frameVec)
+//    for(auto& frame : frameVec)
+//    {
+//        frame.generateObservations();
+//    }
+
+    PointVector obs_pointVector;
+
+    for(auto frame : frameVec)
     {
-        frame.generateObservations();
+        double fx = frame.m_fx;
+        double fy = frame.m_fy;
+        double cx = frame.m_cx;
+        double cy = frame.m_cy;
+        Eigen::Affine3d Twc;
+        Twc.matrix() = frame.getConstTwc();
+        for(auto id_obs : frame.mObservations)
+        {
+            Eigen::Vector3d p_obs;
+            Eigen::Vector3d p_world;
+            auto point_id = id_obs.first;
+            auto obs = id_obs.second;
+
+            p_obs[0] = (obs[0]-cx)*obs[2]/fx;
+            p_obs[1] = (obs[1]-cy)*obs[2]/fy;
+            p_obs[2] = obs[2];
+
+            p_obs = Twc * p_obs;
+
+            Point p(p_obs);
+            obs_pointVector.push_back(p);
+
+        }
     }
+    PointVector pointVector;
+    for(auto point : frontend.mMap.mapPoints_)
+    {
+        Point p(point.pose_);
+        pointVector.push_back(p);
+    }
+//    FrameMethods::filterObservations(frameVec,pointVector,config_file.c_str());
+    Writer::writePoses(frameVec,cam_out_file.c_str());
     Writer::writeObservations(frameVec,obs_path.c_str());
     Writer::writePoints(frontend.mMap,point_path.c_str());
     Viewer viewer;
-    viewer.setMap(&frontend.mMap);
-    viewer.visualizeMap();
+//    viewer.setMap(&frontend.mMap);
+//    viewer.visualizeMap();
+    viewer.setPoints(obs_pointVector);
+    viewer.setFrames(frameVec);
+    viewer.visualize();
 }
 //
 //

@@ -84,6 +84,31 @@ void Writer::writeToFileITEFormat(const Graph &graph, const char *cam_filename, 
     fclose(fptr);
 }
 
+void Writer::writePoses(const FrameVector &frameVector, const char *cam_filename)
+{
+    FILE* fptr = fopen(cam_filename, "w");
+
+    for(const auto& frame : frameVector)
+    {
+        auto Twc = frame.getConstTwc();
+        Eigen::Quaterniond q(Twc.block<3,3>(0,0));
+        Eigen::Vector3d translation = Twc.block<3,1>(0,3);
+        fprintf(fptr,"%lu %lf %lf %lf %lf %lf %lf %lf %lf %lf\n",
+                frame.mITEId,
+                q.w(),
+                q.x(),
+                q.y(),
+                q.z(),
+                translation[0],
+                translation[1],
+                translation[2],
+                0.0,
+                0.0);
+    }
+    fclose(fptr);
+
+}
+
 void Writer::writeObservations(const FrameVector &frameVector, const char *obs_filename)
 {
     FILE* fptr = fopen(obs_filename, "w");
@@ -114,7 +139,7 @@ void Writer::writePoints(const Frontend::Map &map, const char* point_filename)
         auto y = static_cast<float> (point.pose_[1]);
         auto z = static_cast<float> (point.pose_[2]);
 
-        fprintf(fptr,"%d %f %f %f\n",i,x,y,z);
+        fprintf(fptr,"%lu %f %f %f\n", map.mapPoints_[i].id,x,y,z);
     }
     fclose(fptr);
 
