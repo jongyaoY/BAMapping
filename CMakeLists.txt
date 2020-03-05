@@ -127,5 +127,14 @@ add_executable(test_correspondence src/tests/test_correspondence.cpp)
 target_link_libraries(test_correspondence ${PROJECT_NAME}
                                     ${Open3D_LIBRARIES})
 
+add_executable(test_loopClosure src/tests/test_loopClosure.cpp)
+
+target_link_libraries(test_loopClosure ${PROJECT_NAME}
+        ${Open3D_LIBRARIES})
+
+add_executable(test_json src/tests/test_json.cpp)
+target_link_libraries(test_json ${PROJECT_NAME}
+                                    )
+
 
 

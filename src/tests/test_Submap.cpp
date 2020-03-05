@@ -46,12 +46,15 @@ int main(int argc, char** argv)
         int id = 0;
         std::string temp_path = dataset_path + "temp/";
         std::vector<std::string> plyNames;
+        id = std::stoi(argv[2]);
+
         for(auto& subgraph : subgraphs)
         {
+            subgraph = subgraphs[id];
             std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
             std::string plyName = temp_path + "fragment" + std::to_string(id)+".ply";
             BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
-            Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
+            Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),true);
 
             plyNames.push_back(plyName);
             auto pointVec_ = subgraph.copyPoints(frameVec.front().getConstTwc());
@@ -67,13 +70,14 @@ int main(int argc, char** argv)
         auto globalgraph = Graph::generateGlobalGraph(0,graph,subgraphs);
         BundleAdjuster::optimizeGlobal(globalgraph, config_file.c_str(),plyNames);
 
-//        Graph::markSeperators(globalgraph,subgraphs);
-//        for(auto& subgraph : subgraphs)
-//        {
-//            std::cout<<"optimizing: "<<id<<"/"<<subgraphs.size()<<std::endl;
-//            BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
-//
-//        }
+        Graph::markSeperators(globalgraph,subgraphs);
+        id = 0;
+        for(auto& subgraph : subgraphs)
+        {
+            std::cout<<"optimizing with fixed seperators: "<<id<<"/"<<subgraphs.size()<<std::endl;
+            BundleAdjuster::optimize(subgraph, config_file.c_str(),true);
+            id++;
+        }
 
         auto resultGraph = Graph::generateResultGraph(0,globalgraph,subgraphs);
 

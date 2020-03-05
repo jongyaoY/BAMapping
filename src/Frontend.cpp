@@ -52,7 +52,8 @@ void Frontend::ExtractAndMatchFeatures(FrameVector &frameVector, const std::stri
 
     std::cout<<"loading vocabulary..."<<std::endl;
     OrbVocabulary voc(9,3);
-    voc.loadFromTextFile(voc_path);
+//    voc.loadFromTextFile(voc_path);
+    voc.load(voc_path);
     std::cout<<"initializing database..."<<std::endl;
     OrbDatabase feature_db(voc,false,0);
 
@@ -66,46 +67,52 @@ void Frontend::ExtractAndMatchFeatures(FrameVector &frameVector, const std::stri
         std::vector<DMatch> matches;
         ExtractORB(frame,orb_detector);
 
-        DBoW2::QueryResults ret;
-        feature_db.query(frame.mKepoint_descriptors,ret,3);
-        feature_db.add(frame.mKepoint_descriptors);
+        auto ref_id = detectLoopClosure(feature_db,frame);
+        pref_frame = &frameVector[ref_id];
+//        DBoW2::QueryResults ret;
+//        feature_db.query(frame.mKepoint_descriptors,ret,3);
+//        feature_db.add(frame.mKepoint_descriptors);
 //        std::cout<<ret<<std::endl;
 
-        if(!ret.empty())
-        {
-            std::sort(ret.begin(), ret.end(),
-                    [](DBoW2::Result a, DBoW2::Result b)
-            {
-                return a.Id < b.Id;
-            });
-//            std::cout<<ret<<std::endl;
-//            for(auto r : ret)
+//        if(!ret.empty())
+//        {
+//            std::sort(ret.begin(), ret.end(),
+//                    [](DBoW2::Result a, DBoW2::Result b)
 //            {
-//                std::vector<DMatch> matches_temp;
-//                auto temp_ref = frameVector[r.Id];
-//                matchORB(frame.mDescriptior,temp_ref.mDescriptior,matches_temp);
-//
+//                return a.Id < b.Id;
+//            });
+////            std::cout<<ret<<std::endl;
+////            for(auto r : ret)
+////            {
+////                std::vector<DMatch> matches_temp;
+////                auto temp_ref = frameVector[r.Id];
+////                matchORB(frame.mDescriptior,temp_ref.mDescriptior,matches_temp);
+////
+////            }
+//            if(ret[0].Score < 0.1 || abs(frame.mGlobalIndex - ret[0].Id) < 20) //todo
+//            {
+//                pref_frame = &(*(frame_it - 1));
 //            }
-            if(ret[0].Score < 0.1 || abs(frame.mGlobalIndex - ret[0].Id) < 20) //todo
-            {
-                pref_frame = &(*(frame_it - 1));
-            }
-            else
-            {
-                pref_frame = &frameVector[ret[0].Id];
-            }
-        }
-        else
-        {
-            pref_frame = &(*(frame_it - 1));
-        }
+//            else
+//            {
+//                pref_frame = &frameVector[ret[0].Id];
+//            }
+//        }
+//        else
+//        {
+//            pref_frame = &(*(frame_it - 1));
+//        }
 
         Frame& ref_frame = *pref_frame;
         matchORB(frame.mDescriptior,ref_frame.mDescriptior,matches);
-
+        if(matches.empty())
+        {
+            ref_frame = *(frame_it -1);
+            matchORB(frame.mDescriptior,ref_frame.mDescriptior,matches);
+        }
         removeOutliers(frame,ref_frame,matches,0.08);
 
-        alignFrames(frame, last_frame.getConstTwc() ,ref_frame, matches); //todo test
+//        alignFrames(frame, last_frame.getConstTwc() ,ref_frame, matches); //todo test
 
         updateMap(frame,*pref_frame, matches);
 
@@ -332,20 +339,45 @@ void Frontend::alignFrames(BAMapping::Frame &frame,const Mat4 last_Twc, const BA
     frame.setFromAffine3d(Tcw_aff);
 }
 
-void Frontend::query(const Frame &frame,std::vector<cv::DMatch> &goodMatches)
+void Frontend::ExtractAndCreateDatabase(BAMapping::FrameVector &frameVector, const std::string voc_path, const std::string db_path)
 {
-    std::vector<std::vector<cv::DMatch>> matches;
+    using namespace cv;
+    Ptr<ORB> orb_detector = ORB::create(500);
 
-    mMap.matcher_->knnMatch(frame.mDescriptior,mMap.matcher_->getTrainDescriptors(),matches,3);
-    for (unsigned int i = 0; i < matches.size(); ++i)
+    std::cout<<"loading vocabulary..."<<std::endl;
+    OrbVocabulary voc;
+    voc.loadFromTextFile(voc_path);
+//    voc.load(voc_path);
+    std::cout<<"initializing database..."<<std::endl;
+    feature_db_.setVocabulary(voc);
+
+    int i = 0;
+    for(auto frame_it = frameVector.begin(); frame_it != frameVector.end(); frame_it++)
     {
-        if(matches[i].empty())
-            continue;
-
-        if (matches[i][1].distance < matches[i][2].distance * 0.75)
-            goodMatches.push_back(matches[i][1]);
+        ExtractORB(*frame_it,orb_detector);
+        std::cout<<"adding to frame database..."<<i<<std::endl;
+        feature_db_.add(frame_it->mKepoint_descriptors);
+        i++;
     }
 
+    if(!db_path.empty())
+    {
+        std::cout<<"saving database to: "<<db_path<<std::endl;
+        feature_db_.save(db_path);
+        std::cout<<"saved database"<<db_path<<std::endl;
+    }
+
+
+}
+
+void Frontend::query(const Frame &frame, DBoW2::QueryResults& ret)
+{
+    using namespace cv;
+    if(frame.mKepoint_descriptors.empty())
+    {
+        std::cout<<"frame contains no features"<<std::endl;
+    }
+    feature_db_.query(frame.mKepoint_descriptors,ret,20);
 }
 
 
@@ -357,6 +389,11 @@ void Frontend::removeOutliers(const BAMapping::Frame &frame_query,
 {
 
     using namespace cv;
+    if(matches.empty())
+    {
+        std::cout<<"no match"<<std::endl;
+        return;
+    }
     // Extract location of good matches
     std::vector<Point2f> points1, points2;
 
@@ -385,76 +422,6 @@ void Frontend::removeOutliers(const BAMapping::Frame &frame_query,
     matches.clear();
     matches = good_matches;
     printf("removed : %d\n",removed);
-//    good_matches.size();
-//    std::cout<<mask<<std::endl;
-//    auto im1 = imread(frame_query.getInfraRedImagePath());
-//    Mat im1Reg;
-//    warpPerspective(im1, im1Reg, h, im1.size());
-//    imshow("homography",im1);
-//    for(int i = 0; i < points1.size(); i++)
-//    {
-//        Mat p1(points1[i]);
-//        Mat p2(points2[i]);
-//        Eigen::Vector2f p1_, p2_;
-//        Eigen::Matrix3f H;
-//        cv::cv2eigen(p1,p1_);
-//        cv::cv2eigen(p2,p2_);
-//        cv::cv2eigen(h,H);
-//        Eigen::Vector3f dist = Eigen::Vector3f(p2_[0],p2_[1],1) - H * Eigen::Vector3f(p1_[0],p1_[1],1);
-//        float dist_norm = sqrt(dist[0]*dist[0] + dist[1]*dist[1]);
-//        std::cout<<dist_norm<<std::endl;
-//    }
-
-//    Mat depth_query = imread(frame_query.getDepthImagePath(),IMREAD_UNCHANGED);
-//    Mat depth_train = imread(frame_train.getDepthImagePath(),IMREAD_UNCHANGED);
-//
-//    depth_query.convertTo(depth_query,CV_32F,1.0/1000.0);
-//    depth_train.convertTo(depth_train,CV_32F,1.0/1000.0);
-//
-//    int invalid_match = 0;
-//    int total_removed = matches.size();
-//    std::vector<DMatch> valid_matches;
-//    for(int i = 0; i < matches.size(); i++)
-//    {
-//        auto& match = matches[i];
-//        MapPoint query_point;
-//        MapPoint train_point;
-//        auto query_id = match.queryIdx;
-//        auto train_id = match.trainIdx;
-//        if(query_id < 0 || query_id > frame_query.mKeypoints.size())
-//            continue;
-//        if(train_id < 0 || train_id > frame_train.mKeypoints.size())
-//            continue;
-//        auto query_kp = frame_query.mKeypoints[query_id];
-//        auto train_kp = frame_train.mKeypoints[train_id];
-//
-//
-//
-//        bool valid_query = createNewPoint(query_point,query_kp,frame_query.mDescriptior.row(query_id),frame_query,depth_query);
-//        bool valid_train = createNewPoint(train_point,train_kp,frame_train.mDescriptior.row(train_id),frame_train,depth_train);
-//        if(valid_query&&valid_train)
-//        {
-//            auto distance = query_point.pose_ - train_point.pose_;
-//            auto dist_norm = sqrt(distance.dot(distance));
-////            std::cout<<dist_norm<<std::endl; // todo
-//            if(dist_norm > thres) //todo
-//            {
-//                invalid_match++;
-//            }
-//            else
-//            {
-//                valid_matches.push_back(match);
-//            }
-//        }
-//        else
-//        {
-//
-//        }
-//    }
-//    matches.clear();
-//    matches = valid_matches;
-//    total_removed -= matches.size();
-//    std::cout<<"removed invalid match: "<<invalid_match<<", total removed"<<total_removed<<std::endl;
 }
 
 
@@ -520,3 +487,38 @@ void Frontend::triangulateKeyPoints(const BAMapping::Frame &frame, const BAMappi
     }
 }
 
+void Frontend::LoadDataBase(const std::string db_path)
+{
+    std::cout<<"loading dababase from"<<db_path<<std::endl;
+    OrbDatabase db(db_path);
+    std::cout<<"loaded dababase"<<db<<std::endl;
+//    feature_db_ = db;
+}
+
+int Frontend::detectLoopClosure(OrbDatabase& db, const BAMapping::Frame &frame)
+{
+    using namespace cv;
+    DBoW2::QueryResults ret;
+    db.query(frame.mKepoint_descriptors,ret,3);
+    db.add(frame.mKepoint_descriptors);
+    auto best_id = ret[0].Id;
+
+    if(!ret.empty())
+    {
+        std::sort(ret.begin(), ret.end(),
+                  [](DBoW2::Result a, DBoW2::Result b)
+                  {
+                      return a.Id < b.Id;
+                  });
+        std::vector<DMatch> matches;
+        for(auto r : ret)
+        {
+            if(r.Id - best_id > 50 && r.Score>0.1)
+            {
+                return r.Id;
+            }
+        }
+        return best_id;
+    }
+    return -1;
+}

@@ -93,6 +93,68 @@ bool GeometryMethods::createPointCloundFromNodes(const std::vector<Graph::Node> 
 }
 
 
+
+bool GeometryMethods::createPointCloudFromNode(
+        const Graph::Node node,
+        Parser config,
+        std::shared_ptr<open3d::geometry::PointCloud> &pcd,
+        bool color)
+{
+    using namespace open3d;
+    int width = config.getValue<int>("Camera.width");
+    int height = config.getValue<int>("Camera.height");
+    double fx = config.getValue<double>("Camera.fx");
+    double fy = config.getValue<double>("Camera.fy");
+    double cx = config.getValue<double>("Camera.cx");
+    double cy = config.getValue<double>("Camera.cy");
+
+    camera::PinholeCameraIntrinsic intrinsic;
+
+    intrinsic.SetIntrinsics(width,height,fx,fy,cx,cy);
+
+    geometry::RGBDImage rgbd;
+    bool success = createRGBDImageFromNode(node,config,rgbd,!color);
+    if(success)
+    {
+        pcd = geometry::PointCloud::CreateFromRGBDImage(rgbd,intrinsic);
+//        visualization::DrawGeometries({pcd});
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+
+//    if(color)
+//    {
+//        geometry::RGBDImage rgbd;
+//        bool success = createRGBDImageFromNode(node,config,rgbd,false);
+//        if(success)
+//        {
+//            pcd = geometry::PointCloud::CreateFromRGBDImage(rgbd,intrinsic);
+//            return true;
+//        }
+//        else
+//        {
+//            return false;
+//        }
+//    }
+//    else
+//    {
+//        geometry::RGBDImage rgbd;
+//        bool success = createRGBDImageFromNode(node,config,rgbd,true);
+//        if(success)
+//        {
+//            pcd = geometry::PointCloud::CreateFromRGBDImage(rgbd,intrinsic);
+//            return true;
+//        }
+//        else
+//        {
+//            return false;
+//        }
+////        geometry::PointCloud::CreateFromDepthImage()
+//    }
+}
 //bool GeometryMethods::createPointCloundFromFrames(const FrameVector frameVector, Parser config,
 //                                                  std::shared_ptr<open3d::geometry::PointCloud> &pcd, bool color)
 //{

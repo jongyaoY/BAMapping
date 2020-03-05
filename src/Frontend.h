@@ -100,17 +100,20 @@ namespace BAMapping
 
         void ExtractORB(Frame& frame,cv::Ptr<cv::ORB> orb_detector);
         void ExtractAndMatchFeatures(FrameVector& frameVector, const std::string voc_path);
-        void query(const Frame& frame,std::vector<cv::DMatch> &goodMatches);
+        void ExtractAndCreateDatabase(FrameVector& frameVector, const std::string voc_path, const std::string db_path = "");
+        void LoadDataBase(const std::string db_path);
+        void query(const Frame& frame, DBoW2::QueryResults& ret);
+        void matchORB(const cv::Mat &query, const cv::Mat &target,
+                      std::vector<cv::DMatch> &goodMatches);
         Map mMap;
-
     private:
         bool createNewPoint(MapPoint& mapPoint, const cv::KeyPoint& point, const cv::Mat& descriptor,const Frame& frame, const cv::Mat& depth_img, const double depth_thres = 3.0);
 
         void updateMap(Frame& frame,
                 Frame& ref_frame, const std::vector<cv::DMatch>& matches);
 
-        void matchORB(const cv::Mat &query, const cv::Mat &target,
-                      std::vector<cv::DMatch> &goodMatches);
+        int detectLoopClosure(OrbDatabase& db,const Frame& frame);
+
 
         void alignFrames(Frame& frame, const Mat4 last_Twc ,const Frame& ref_frame,const std::vector<cv::DMatch>& matches);
 
@@ -119,7 +122,7 @@ namespace BAMapping
         void triangulateKeyPoints(const Frame& frame, const Frame& ref_frame, const std::vector<cv::DMatch>& matches, std::vector<MapPoint>& mapPoints);
 
         MotionModel motionModel_;
-
+        OrbDatabase feature_db_;
     };
 }
 

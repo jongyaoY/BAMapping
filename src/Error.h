@@ -63,6 +63,61 @@
 //    double observed_y;
 //};
 
+struct GeoError_point_to_plane
+{
+    GeoError_point_to_plane(const Eigen::Vector3d vs, const Eigen::Vector3d vt, const Eigen::Vector3d nt)
+            : vs_(vs), vt_(vt), nt_(nt) {}
+
+    template <typename T>
+    bool operator()(const T* const pose_s,
+                    const T* const pose_t,
+                    T* residuals) const
+    {
+        Eigen::Matrix<T,3,3> R_s,R_t,R_s_inv,R_t_inv;
+        Eigen::Matrix<T,3,1> t_s,t_t;
+        ceres::AngleAxisToRotationMatrix(pose_s,&R_s_inv(0));
+        ceres::AngleAxisToRotationMatrix(pose_t,&R_t_inv(0));
+        t_s << pose_s[3],pose_s[4],pose_s[5];
+        t_t << pose_t[3],pose_t[4],pose_t[5];
+
+        R_s = R_s_inv.transpose();
+        R_t = R_t_inv.transpose();
+
+        t_s = - R_s * t_s;
+        t_t = - R_t * t_t;
+
+        Eigen::Matrix<T,3,1> vs =  (Eigen::Matrix<T,3,1>() << T(vs_[0]),T(vs_[1]),T(vs_[2])).finished();
+        Eigen::Matrix<T,3,1> vt =  (Eigen::Matrix<T,3,1>() << T(vt_[0]),T(vt_[1]),T(vt_[2])).finished();
+        Eigen::Matrix<T,3,1> nt =  (Eigen::Matrix<T,3,1>() << T(nt_[0]),T(nt_[1]),T(nt_[2])).finished();
+
+        vs = R_s * vs;
+        vs += t_s;
+
+        vt = R_t * vt;
+        vt += t_t;
+
+        T dist;
+        dist = (vs - vt).dot(nt);
+
+        residuals[0] = dist;
+
+        return true;
+    }
+
+    static ceres::CostFunction* Create(
+            const Eigen::Vector3d vs,
+            const Eigen::Vector3d vt,
+            const Eigen::Vector3d nt) {
+        return (new ceres::AutoDiffCostFunction<GeoError_point_to_plane, 1, 6, 6>(
+                new GeoError_point_to_plane(vs, vt, nt)));
+    }
+
+    Eigen::Vector3d vs_;
+    Eigen::Vector3d vt_;
+    Eigen::Vector3d nt_;
+
+};
+
 struct GeoError
 {
     GeoError(const Eigen::Vector3d vs, const Eigen::Vector3d vt, const Eigen::Vector3d nt)

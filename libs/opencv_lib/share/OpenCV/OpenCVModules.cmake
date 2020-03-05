@@ -16,7 +16,7 @@ set(CMAKE_IMPORT_FILE_VERSION 1)
 set(_targetsDefined)
 set(_targetsNotDefined)
 set(_expectedTargets)
-foreach(_expectedTarget opencv_core opencv_flann opencv_imgproc opencv_ml opencv_photo opencv_video opencv_dnn opencv_features2d opencv_imgcodecs opencv_shape opencv_videoio opencv_calib3d opencv_highgui opencv_objdetect opencv_stitching opencv_superres opencv_videostab)
+foreach(_expectedTarget opencv_core opencv_flann opencv_imgproc opencv_ml opencv_phase_unwrapping opencv_photo opencv_plot opencv_reg opencv_surface_matching opencv_video opencv_xphoto opencv_dnn opencv_features2d opencv_freetype opencv_fuzzy opencv_hfs opencv_img_hash opencv_imgcodecs opencv_line_descriptor opencv_saliency opencv_shape opencv_text opencv_videoio opencv_calib3d opencv_datasets opencv_highgui opencv_objdetect opencv_rgbd opencv_stereo opencv_structured_light opencv_superres opencv_tracking opencv_videostab opencv_xfeatures2d opencv_ximgproc opencv_xobjdetect opencv_aruco opencv_bgsegm opencv_bioinspired opencv_ccalib opencv_dnn_objdetect opencv_dpm opencv_face opencv_optflow opencv_sfm correspondence multiview numeric opencv_stitching)
   list(APPEND _expectedTargets ${_expectedTarget})
   if(NOT TARGET ${_expectedTarget})
     list(APPEND _targetsNotDefined ${_expectedTarget})
@@ -73,6 +73,13 @@ set_target_properties(opencv_ml PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core"
 )
 
+# Create imported target opencv_phase_unwrapping
+add_library(opencv_phase_unwrapping SHARED IMPORTED)
+
+set_target_properties(opencv_phase_unwrapping PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
 # Create imported target opencv_photo
 add_library(opencv_photo SHARED IMPORTED)
 
@@ -80,11 +87,39 @@ set_target_properties(opencv_photo PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
 )
 
+# Create imported target opencv_plot
+add_library(opencv_plot SHARED IMPORTED)
+
+set_target_properties(opencv_plot PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_reg
+add_library(opencv_reg SHARED IMPORTED)
+
+set_target_properties(opencv_reg PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_surface_matching
+add_library(opencv_surface_matching SHARED IMPORTED)
+
+set_target_properties(opencv_surface_matching PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann"
+)
+
 # Create imported target opencv_video
 add_library(opencv_video SHARED IMPORTED)
 
 set_target_properties(opencv_video PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_xphoto
+add_library(opencv_xphoto SHARED IMPORTED)
+
+set_target_properties(opencv_xphoto PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc;opencv_photo"
 )
 
 # Create imported target opencv_dnn
@@ -101,6 +136,34 @@ set_target_properties(opencv_features2d PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc"
 )
 
+# Create imported target opencv_freetype
+add_library(opencv_freetype SHARED IMPORTED)
+
+set_target_properties(opencv_freetype PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_fuzzy
+add_library(opencv_fuzzy SHARED IMPORTED)
+
+set_target_properties(opencv_fuzzy PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_hfs
+add_library(opencv_hfs SHARED IMPORTED)
+
+set_target_properties(opencv_hfs PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
+# Create imported target opencv_img_hash
+add_library(opencv_img_hash SHARED IMPORTED)
+
+set_target_properties(opencv_img_hash PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
+)
+
 # Create imported target opencv_imgcodecs
 add_library(opencv_imgcodecs SHARED IMPORTED)
 
@@ -108,11 +171,32 @@ set_target_properties(opencv_imgcodecs PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc"
 )
 
+# Create imported target opencv_line_descriptor
+add_library(opencv_line_descriptor SHARED IMPORTED)
+
+set_target_properties(opencv_line_descriptor PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d"
+)
+
+# Create imported target opencv_saliency
+add_library(opencv_saliency SHARED IMPORTED)
+
+set_target_properties(opencv_saliency PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d"
+)
+
 # Create imported target opencv_shape
 add_library(opencv_shape SHARED IMPORTED)
 
 set_target_properties(opencv_shape PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc;opencv_video"
+)
+
+# Create imported target opencv_text
+add_library(opencv_text SHARED IMPORTED)
+
+set_target_properties(opencv_text PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_dnn;opencv_features2d"
 )
 
 # Create imported target opencv_videoio
@@ -129,6 +213,13 @@ set_target_properties(opencv_calib3d PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d"
 )
 
+# Create imported target opencv_datasets
+add_library(opencv_datasets SHARED IMPORTED)
+
+set_target_properties(opencv_datasets PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_dnn;opencv_features2d;opencv_imgcodecs;opencv_text"
+)
+
 # Create imported target opencv_highgui
 add_library(opencv_highgui SHARED IMPORTED)
 
@@ -143,11 +234,25 @@ set_target_properties(opencv_objdetect PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_calib3d"
 )
 
-# Create imported target opencv_stitching
-add_library(opencv_stitching SHARED IMPORTED)
+# Create imported target opencv_rgbd
+add_library(opencv_rgbd SHARED IMPORTED)
 
-set_target_properties(opencv_stitching PROPERTIES
+set_target_properties(opencv_rgbd PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_calib3d"
+)
+
+# Create imported target opencv_stereo
+add_library(opencv_stereo SHARED IMPORTED)
+
+set_target_properties(opencv_stereo PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_calib3d"
+)
+
+# Create imported target opencv_structured_light
+add_library(opencv_structured_light SHARED IMPORTED)
+
+set_target_properties(opencv_structured_light PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_phase_unwrapping;opencv_features2d;opencv_calib3d"
 )
 
 # Create imported target opencv_superres
@@ -157,11 +262,130 @@ set_target_properties(opencv_superres PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc;opencv_video;opencv_imgcodecs;opencv_videoio"
 )
 
+# Create imported target opencv_tracking
+add_library(opencv_tracking SHARED IMPORTED)
+
+set_target_properties(opencv_tracking PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_plot;opencv_video;opencv_dnn;opencv_features2d;opencv_imgcodecs;opencv_text;opencv_datasets"
+)
+
 # Create imported target opencv_videostab
 add_library(opencv_videostab SHARED IMPORTED)
 
 set_target_properties(opencv_videostab PROPERTIES
   INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_photo;opencv_video;opencv_features2d;opencv_imgcodecs;opencv_videoio;opencv_calib3d"
+)
+
+# Create imported target opencv_xfeatures2d
+add_library(opencv_xfeatures2d SHARED IMPORTED)
+
+set_target_properties(opencv_xfeatures2d PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_video;opencv_features2d;opencv_shape;opencv_calib3d"
+)
+
+# Create imported target opencv_ximgproc
+add_library(opencv_ximgproc SHARED IMPORTED)
+
+set_target_properties(opencv_ximgproc PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_imgcodecs;opencv_calib3d"
+)
+
+# Create imported target opencv_xobjdetect
+add_library(opencv_xobjdetect SHARED IMPORTED)
+
+set_target_properties(opencv_xobjdetect PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_imgcodecs;opencv_calib3d;opencv_objdetect"
+)
+
+# Create imported target opencv_aruco
+add_library(opencv_aruco SHARED IMPORTED)
+
+set_target_properties(opencv_aruco PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_calib3d"
+)
+
+# Create imported target opencv_bgsegm
+add_library(opencv_bgsegm SHARED IMPORTED)
+
+set_target_properties(opencv_bgsegm PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_video;opencv_features2d;opencv_calib3d"
+)
+
+# Create imported target opencv_bioinspired
+add_library(opencv_bioinspired SHARED IMPORTED)
+
+set_target_properties(opencv_bioinspired PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc;opencv_imgcodecs;opencv_videoio;opencv_highgui"
+)
+
+# Create imported target opencv_ccalib
+add_library(opencv_ccalib SHARED IMPORTED)
+
+set_target_properties(opencv_ccalib PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_imgcodecs;opencv_videoio;opencv_calib3d;opencv_highgui"
+)
+
+# Create imported target opencv_dnn_objdetect
+add_library(opencv_dnn_objdetect SHARED IMPORTED)
+
+set_target_properties(opencv_dnn_objdetect PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_imgproc;opencv_dnn;opencv_imgcodecs;opencv_videoio;opencv_highgui"
+)
+
+# Create imported target opencv_dpm
+add_library(opencv_dpm SHARED IMPORTED)
+
+set_target_properties(opencv_dpm PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_features2d;opencv_imgcodecs;opencv_videoio;opencv_calib3d;opencv_highgui;opencv_objdetect"
+)
+
+# Create imported target opencv_face
+add_library(opencv_face SHARED IMPORTED)
+
+set_target_properties(opencv_face PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_photo;opencv_video;opencv_features2d;opencv_calib3d;opencv_objdetect"
+)
+
+# Create imported target opencv_optflow
+add_library(opencv_optflow SHARED IMPORTED)
+
+set_target_properties(opencv_optflow PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_video;opencv_features2d;opencv_imgcodecs;opencv_calib3d;opencv_ximgproc"
+)
+
+# Create imported target opencv_sfm
+add_library(opencv_sfm SHARED IMPORTED)
+
+set_target_properties(opencv_sfm PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_video;opencv_features2d;opencv_imgcodecs;opencv_shape;opencv_calib3d;opencv_xfeatures2d"
+)
+
+# Create imported target correspondence
+add_library(correspondence STATIC IMPORTED)
+
+set_target_properties(correspondence PROPERTIES
+  INTERFACE_LINK_LIBRARIES "/usr/lib/x86_64-linux-gnu/libglog.so;\$<LINK_ONLY:multiview>;Eigen3::Eigen"
+)
+
+# Create imported target multiview
+add_library(multiview STATIC IMPORTED)
+
+set_target_properties(multiview PROPERTIES
+  INTERFACE_LINK_LIBRARIES "/usr/lib/x86_64-linux-gnu/libglog.so;\$<LINK_ONLY:numeric>;Eigen3::Eigen"
+)
+
+# Create imported target numeric
+add_library(numeric STATIC IMPORTED)
+
+set_target_properties(numeric PROPERTIES
+  INTERFACE_LINK_LIBRARIES "Eigen3::Eigen"
+)
+
+# Create imported target opencv_stitching
+add_library(opencv_stitching SHARED IMPORTED)
+
+set_target_properties(opencv_stitching PROPERTIES
+  INTERFACE_LINK_LIBRARIES "opencv_core;opencv_flann;opencv_imgproc;opencv_ml;opencv_video;opencv_features2d;opencv_shape;opencv_calib3d;opencv_xfeatures2d"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

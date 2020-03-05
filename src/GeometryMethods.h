@@ -22,11 +22,12 @@ namespace BAMapping
                 std::shared_ptr<open3d::geometry::PointCloud>& pcd,
                 bool color = false
                 );
-//        static bool createMeshFromFrames(
-//                const FrameVector frameVector,
-//                const Parser config,
-//                std::shared_ptr<open3d::geometry::TriangleMesh>& mesh,
-//                bool color = false);
+        static bool createPointCloudFromNode(
+                const Graph::Node node,
+                const Parser config,
+                std::shared_ptr<open3d::geometry::PointCloud>& pcd,
+                bool color = false
+        );
     };
 }
 

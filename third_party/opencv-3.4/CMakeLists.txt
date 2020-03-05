@@ -197,7 +197,7 @@ endif()
 # OpenCV cmake options
 # ----------------------------------------------------------------------------
 
-OCV_OPTION(OPENCV_ENABLE_NONFREE "Enable non-free algorithms" OFF)
+OCV_OPTION(OPENCV_ENABLE_NONFREE "Enable non-free algorithms" ON)
 
 # 3rd party libs
 OCV_OPTION(OPENCV_FORCE_3RDPARTY_BUILD   "Force using 3rdparty code from source" OFF)

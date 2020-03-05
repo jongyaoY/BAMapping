@@ -87,10 +87,10 @@
 /* #undef HAVE_GSTREAMER */
 
 /* GTK+ 2.0 Thread support */
-/* #undef HAVE_GTHREAD */
+#define HAVE_GTHREAD
 
 /* GTK+ 2.x toolkit */
-/* #undef HAVE_GTK */
+#define HAVE_GTK
 
 /* Halide support */
 /* #undef HAVE_HALIDE */
