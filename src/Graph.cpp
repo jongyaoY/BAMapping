@@ -62,6 +62,63 @@ Graph Graph::generateGlobalGraph(const size_t n_overlap, const Graph &graph, con
     return globalGraph;
 }
 
+Graph Graph::generateGlobalGraph(const Graph &graph, const std::vector<Graph> &subgraphs)
+{
+    Graph globalGraph;
+
+    int global_id = 0;
+    Mat4 Twc = Mat4::Identity();
+    for(int i = 0; i < subgraphs.size(); i++)
+    {
+        Node node = graph.nodes_[global_id];
+        node.pose_ = Twc;
+        globalGraph.nodes_.push_back(node);
+        global_id += subgraphs[i].nodes_.size();
+        Twc = Twc * subgraphs[i].nodes_.back().pose_;
+    }
+
+    std::vector<std::list<size_t>> subgraph_point_id;
+    subgraph_point_id.reserve(globalGraph.nodes_.size());
+    for(size_t node_id = 0; node_id < globalGraph.nodes_.size(); node_id++)
+    {
+        auto subgraph = subgraphs[node_id];
+        std::list<size_t> point_ids;
+        for(auto point : subgraph.points_)
+        {
+            Edge edge(node_id,point.global_id,point.pose_);
+            globalGraph.edges_.push_back(edge);
+
+            point_ids.push_back(point.global_id);
+        }
+        subgraph_point_id.push_back(point_ids);
+    }
+
+    globalGraph.points_ = graph.points_;
+    std::list<size_t > seperater_ids;
+    for(int i = 0; i < subgraph_point_id.size(); i++)
+    {
+        for(int j = i + 1; j < subgraph_point_id.size(); j++)
+        {
+            std::list<size_t> list_i = subgraph_point_id[i];
+            std::list<size_t> list_j = subgraph_point_id[j];
+            list_i.sort();
+            list_j.sort();
+            std::list<size_t> intersect;
+            std::set_intersection(
+                    list_i.begin(),list_i.end(),
+                    list_j.begin(),list_j.end(),
+                    std::back_inserter(intersect));
+            for(auto id : intersect)
+            {
+                globalGraph.points_[id].is_seperator_ = true;
+            }
+        }
+    }
+
+
+    return globalGraph;
+}
+
 Graph Graph::generateResultGraph(const size_t n_overlap, const Graph& globalgraph, const std::vector<Graph>& subgraphs)
 {
     Graph resultGraph;
@@ -167,17 +224,6 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
         }
         nodes_.push_back(node);
     }
-//    for(size_t i = 0; i < frameVector.size(); i++)
-//    {
-//        auto frame = frameVector[i];
-//        auto obs_vec = frame.getObservations();
-//
-//        for(auto obs : obs_vec)
-//        {
-//            Graph::Edge edge(i,obs.first,obs.second);
-//            edges_.push_back(edge);
-//        }
-//    }
 
     for(auto point : pointVector)
     {
@@ -185,34 +231,6 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
         p.global_id = points_.size();
         points_.push_back(p);
     }
-//    std::vector<size_t> global_point_id_vec;
-//    for(auto& edge : edges_)
-//    {
-//        size_t global_point_id = edge.point_id_;
-//        int local_id = -1;
-//        for(int i = 0; i < global_point_id_vec.size(); i++)
-//        {
-//            if(global_point_id == global_point_id_vec[i])
-//            {
-//                local_id = i;
-//                break;
-//            }
-//        }
-//
-//        if(local_id != -1)
-//        {
-//            edge.point_id_ = local_id;
-//        }
-//        else
-//        {
-//            auto point = pointVector[global_point_id];
-//            Graph::Point p(point.getPoseInFrame(Tc0w));
-//            edge.point_id_ = points_.size();
-//            p.global_id = points_.size();
-//            points_.push_back(p);
-//            global_point_id_vec.push_back(global_point_id);
-//        }
-//    }
 }
 
 int Graph::isPointObserved(size_t global_point_id)
@@ -267,6 +285,50 @@ std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, co
         if(node_id >= graph.nodes_.size()-1)
             break;
         node_id -= n_overlap;
+    }
+
+    return subgraphs;
+}
+
+std::vector<Graph> Graph::spliteIntoSubgraphs(const size_t n_nodes_per_graph, const Graph &graph)
+{
+    std::vector<Graph> subgraphs;
+    for(size_t node_id = 0; node_id < graph.nodes_.size();)
+    {
+        Graph subgraph;
+        auto Tc0w = graph.nodes_[node_id].pose_.inverse();
+        Eigen::Affine3d Tc0w_aff;
+        Tc0w_aff.matrix() = Tc0w;
+        for(size_t i = 0; i < n_nodes_per_graph&&node_id < graph.nodes_.size(); i++,node_id++)
+        {
+            auto node = graph.nodes_[node_id];
+            node.pose_ = Tc0w * node.pose_;
+            for(auto edge : graph.edges_)
+            {
+                if(edge.node_id_ == node_id)
+                {
+                    auto global_id = graph.points_[edge.point_id_].global_id;
+                    auto local_id = subgraph.isPointObserved(global_id);
+                    if(local_id != -1)
+                    {
+                        Edge edge_sub(subgraph.nodes_.size(),local_id,edge.obs_);
+                        subgraph.edges_.push_back(edge_sub);
+                    }
+                    else
+                    {
+                        Point point_sub = graph.points_[edge.point_id_];
+                        point_sub.pose_ = Tc0w_aff * point_sub.pose_;
+                        Edge edge_sub(subgraph.nodes_.size(),subgraph.points_.size(),edge.obs_);
+                        subgraph.points_.push_back(point_sub);
+                        subgraph.edges_.push_back(edge_sub);
+                    }
+                }
+            }
+            subgraph.nodes_.push_back(node);
+        }
+        subgraphs.push_back(subgraph);
+        if(node_id >= graph.nodes_.size()-1)
+            break;
     }
 
     return subgraphs;
@@ -442,6 +504,7 @@ void Graph::ReadFromeFile(Graph &graph, const char *filename)
             i++;
         }
         Edge edge(edge_val["node_id"].GetInt(),edge_val["point_id"].GetInt(),obs);
+        graph.edges_.push_back(edge);
     }
     fclose(pf);
 }

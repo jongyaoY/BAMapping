@@ -16,7 +16,10 @@ namespace BAMapping
     {
     public:
         static std::vector<Graph> spliteIntoSubgraphs(const size_t n_nodes_per_graph, const size_t n_overlap, const Graph& graph);
+        static std::vector<Graph> spliteIntoSubgraphs(const size_t n_nodes_per_graph, const Graph& graph);
+
         static Graph generateGlobalGraph(const size_t n_overlap, const Graph& graph, const std::vector<Graph>& subgraphs);
+        static Graph generateGlobalGraph(const Graph& graph, const std::vector<Graph>& subgraphs);
         static Graph generateResultGraph(const size_t n_overlap, const Graph& globalgraph, const std::vector<Graph>& subgraphs);
         static void WriteToFile(const Graph& graph,const char* filename);
         static void ReadFromeFile(Graph& graph, const char* filename);

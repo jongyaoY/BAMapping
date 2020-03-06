@@ -280,7 +280,7 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
 
     if(!plyNames.empty())
     {
-        double voxel_size = config.getValue<double>("voxel_size");
+        double voxel_size = config.getValue<double>("global_voxel_size");
         for(size_t i = 0; i < graph.nodes_.size()-1; i++)
         {
 
@@ -315,7 +315,9 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
             {
                 auto s = corr[0];
                 auto t = corr[1];
-                ceres::CostFunction* cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+
+//                ceres::CostFunction* cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
                 ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,dense_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
                 problem.AddResidualBlock(cost_function, weight,&extrinsics[i](0),&extrinsics[i + 1](0));
             }

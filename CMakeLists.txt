@@ -114,7 +114,10 @@ target_link_libraries(${PROJECT_NAME}
 #                                    ${Pangolin_LIBRARIES}
 #                                    )
 
+add_executable(submapOptimization src/submapOptimization.cpp)
 
+target_link_libraries(submapOptimization ${PROJECT_NAME}
+                                    ${Open3D_LIBRARIES})
 
 
 add_executable(test_Submap src/tests/test_Submap.cpp)
