@@ -4,6 +4,7 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/filereadstream.h"
+#include "rapidjson/filewritestream.h"
 #include <iostream>
 using namespace BAMapping;
 
@@ -433,11 +434,17 @@ void Graph::WriteToFile(const Graph &graph, const char *filename)
     d.AddMember("Nodes",nodes,allocator);
     d.AddMember("Points",points,allocator);
     d.AddMember("Edges",edges,allocator);
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    d.Accept(writer);
+
     FILE* pf = fopen(filename,"w");
-    fprintf(pf,"%s",buffer.GetString());
+
+    char writeBuffer[65536];
+    FileWriteStream os(pf, writeBuffer, sizeof(writeBuffer));
+
+//    StringBuffer buffer;
+    PrettyWriter<FileWriteStream> writer(os);
+    d.Accept(writer);
+    fclose(pf);
+//    fprintf(pf,"%s",buffer.GetString());
 }
 
 void Graph::ReadFromeFile(Graph &graph, const char *filename)

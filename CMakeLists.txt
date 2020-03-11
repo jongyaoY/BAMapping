@@ -117,8 +117,26 @@ target_link_libraries(${PROJECT_NAME}
 add_executable(submapOptimization src/submapOptimization.cpp)
 
 target_link_libraries(submapOptimization ${PROJECT_NAME}
-                                    ${Open3D_LIBRARIES})
+                                        ${Open3D_LIBRARIES})
 
+add_executable(globalOptimization src/globalOptimization.cpp)
+
+target_link_libraries(globalOptimization ${PROJECT_NAME}
+                                        ${Open3D_LIBRARIES})
+
+add_executable(Visualizer src/Visualizer.cpp)
+target_link_libraries(Visualizer ${Open3D_LIBRARIES})
+
+add_executable(integrateGraph src/integrateGraph.cpp)
+
+target_link_libraries(integrateGraph ${PROJECT_NAME}
+                                 ${Open3D_LIBRARIES})
+
+add_executable(createVocabulary src/createVocabulary.cpp)
+target_link_libraries(createVocabulary ${PROJECT_NAME})
+
+add_executable(runFrontend src/runFrontend.cpp)
+target_link_libraries(runFrontend ${PROJECT_NAME})
 
 add_executable(test_Submap src/tests/test_Submap.cpp)
 

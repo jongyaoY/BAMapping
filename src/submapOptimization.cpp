@@ -12,10 +12,17 @@
 int main(int argc, char** argv)
 {
     using namespace BAMapping;
-    std::string dataset_path = "../dataset/ITE_Office/";
-    std::string cam_path = dataset_path + argv[1];
+    if(argc < 2)
+    {
+        printf("usage: ../path_to_data_set/ \n");
+        return 0;
+    }
+    std::string dataset_path = argv[1];
+    std::string cam_path = dataset_path + "cameras.txt";
     std::string config_file = dataset_path + "ITE.yaml";
     std::string temp_path = dataset_path + "temp/";
+    std::string result_graph_file = dataset_path + "result_graph.json";
+
 
     auto frameVec = io::Reader::readITEFrames(cam_path.c_str(),
                                               (dataset_path + "observations.txt").c_str(),
@@ -28,7 +35,7 @@ int main(int argc, char** argv)
 
     Graph graph;
     graph.setGraph(frameVec,ref_pointVec);
-
+//    Graph::ReadFromeFile(graph,result_graph_file.c_str());
     auto subgraphs = Graph::spliteIntoSubgraphs(n,graph);
     for(int id = 0; id < subgraphs.size(); id++)
     {
@@ -40,6 +47,5 @@ int main(int argc, char** argv)
         Graph::WriteToFile(subgraph,graph_file.c_str());
         Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
     }
-
 
 }

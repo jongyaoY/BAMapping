@@ -19,6 +19,7 @@ void BundleAdjuster::optimize(BAMapping::Graph &graph, const char* config_file,c
     auto intrinsics = getIntrinsics(config, graph.nodes_.size());
     bool dense_term = config.getValue<bool>("use_dense_term");
     double sparse_weight = config.getValue<double>("local_sparse_weight");
+    bool use_point_to_plane = config.getValue<bool>("local_use_point_to_plane");
     double dense_weight = 1 - sparse_weight;
     bool is_camera_locked = false;
 
@@ -105,9 +106,16 @@ void BundleAdjuster::optimize(BAMapping::Graph &graph, const char* config_file,c
             {
                 auto s = corr[0];
                 auto t = corr[1];
-//                ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                ceres::CostFunction* cost_function;
+                if(use_point_to_plane)
+                {
+                    cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                }
+                else
+                {
+                    cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                }
 
-                ceres::CostFunction* cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
                 ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,dense_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
                 problem.AddResidualBlock(cost_function,weight,&extrinsics[i](0),&extrinsics[i + 1](0));
             }
@@ -252,7 +260,9 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
     ceres::Problem problem;
     auto extrinsics = packCameraParam(graph);
     auto points = packPointParam(graph);
+    bool use_dense = config.getValue<bool>("global_use_dense_term");
     double sparse_weight = config.getValue<double>("global_sparse_weight");
+    bool use_point_to_plane = config.getValue<bool>("global_use_point_to_plane");
     double std_ratio = config.getValue<double>("std_ratio");
     int nb_neighbors = config.getValue<int>("nb_neighbors");
     double dense_weight = 1 - sparse_weight;
@@ -277,55 +287,64 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
         }
     }
 
-
-    if(!plyNames.empty())
+    if(use_dense)
     {
-        double voxel_size = config.getValue<double>("global_voxel_size");
-        for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+        if(!plyNames.empty())
         {
+            double voxel_size = config.getValue<double>("global_voxel_size");
+            for(size_t i = 0; i < graph.nodes_.size()-1; i++)
+            {
 
-            auto node_s = graph.nodes_[i];
-            auto node_t = graph.nodes_[i + 1];
-            std::shared_ptr<open3d::geometry::PointCloud> source(new open3d::geometry::PointCloud);
-            std::shared_ptr<open3d::geometry::PointCloud> target(new open3d::geometry::PointCloud);
-            geometry::TriangleMesh source_ply;
-            geometry::TriangleMesh target_ply;
+                auto node_s = graph.nodes_[i];
+                auto node_t = graph.nodes_[i + 1];
+                std::shared_ptr<open3d::geometry::PointCloud> source(new open3d::geometry::PointCloud);
+                std::shared_ptr<open3d::geometry::PointCloud> target(new open3d::geometry::PointCloud);
+                geometry::TriangleMesh source_ply;
+                geometry::TriangleMesh target_ply;
 
-            io::ReadPointCloud(plyNames[i],*source);
-            io::ReadPointCloud(plyNames[i+1],*target);
+                io::ReadPointCloud(plyNames[i],*source);
+                io::ReadPointCloud(plyNames[i+1],*target);
 //            io::ReadTriangleMeshFromPLY(plyNames[i],source_ply,false);
 //            io::ReadTriangleMeshFromPLY(plyNames[i+1],target_ply,false);
 
 
-            auto source_down = source->VoxelDownSample(voxel_size);
-            auto target_down = target->VoxelDownSample(voxel_size);
+                auto source_down = source->VoxelDownSample(voxel_size);
+                auto target_down = target->VoxelDownSample(voxel_size);
 
-            auto result_source = source_down->RemoveStatisticalOutliers(nb_neighbors,std_ratio);
-            auto result_target = target_down->RemoveStatisticalOutliers(nb_neighbors,std_ratio);
-            source_down = std::get<0>(result_source);
-            target_down = std::get<0>(result_target);
+                auto result_source = source_down->RemoveStatisticalOutliers(nb_neighbors,std_ratio);
+                auto result_target = target_down->RemoveStatisticalOutliers(nb_neighbors,std_ratio);
+                source_down = std::get<0>(result_source);
+                target_down = std::get<0>(result_target);
 
 //            visualization::DrawGeometries({source_down});
 
-            target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+                target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
-            auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+                auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
 
-            for(auto corr : result.correspondence_set_)
-            {
-                auto s = corr[0];
-                auto t = corr[1];
-                ceres::CostFunction* cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                for(auto corr : result.correspondence_set_)
+                {
+                    auto s = corr[0];
+                    auto t = corr[1];
+                    ceres::CostFunction* cost_function;
+                    if(use_point_to_plane)
+                    {
+                        cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                    }
+                    else
+                    {
+                        cost_function = GeoError::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
+                    }
 
-//                ceres::CostFunction* cost_function = GeoError_point_to_plane::Create(source_down->points_[s],target_down->points_[t],target_down->normals_[t]);
-                ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,dense_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
-                problem.AddResidualBlock(cost_function, weight,&extrinsics[i](0),&extrinsics[i + 1](0));
-            }
+                    ceres::ScaledLoss* weight = new ceres::ScaledLoss(NULL,dense_weight,ceres::Ownership::DO_NOT_TAKE_OWNERSHIP);
+                    problem.AddResidualBlock(cost_function, weight,&extrinsics[i](0),&extrinsics[i + 1](0));
+                }
 
-            if (!is_camera_locked)
-            {
-                problem.SetParameterBlockConstant(&extrinsics[0](0));
-                is_camera_locked = true;
+                if (!is_camera_locked)
+                {
+                    problem.SetParameterBlockConstant(&extrinsics[0](0));
+                    is_camera_locked = true;
+                }
             }
         }
     }

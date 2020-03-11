@@ -11,7 +11,7 @@
 int main(int argc, char** argv)
 {
     using namespace BAMapping;
-    std::string dataset_path = "../dataset/ITE_Office/";
+    std::string dataset_path = "../dataset/mpu/";//"../dataset/ITE_Office/";
     std::string voc_path = dataset_path + "ORBvoc.yml.gz";
     std::string obs_path = dataset_path + "observations.txt";
     std::string point_path = dataset_path + "points.txt";

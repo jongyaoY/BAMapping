@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 {
     using namespace BAMapping;
-    std::string dataset_path = "../dataset/ITE_Office/";
+    std::string dataset_path = "../dataset/mpu/";//"../dataset/ITE_Office/";
     std::string cam_path = dataset_path + argv[1];
     auto frameVec = io::Reader::readITEFrames(cam_path.c_str(),
                                               (dataset_path + "observations.txt").c_str(),
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 //        Writer::writeToFileTUMFormat(graph,init_cam_file_tum_format.c_str());
         std::cout<<"read point: "<<ref_pointVec.size()<<std::endl;
         std::cout<<"point in graph: "<<graph.points_.size()<<std::endl;
-        BundleAdjuster::optimize(graph, config_file.c_str(),false);
+//        BundleAdjuster::optimize(graph, config_file.c_str(),false);
 //        Writer::writeToFile(graph, output_cam_file.c_str(),output_point_file.c_str(),output_image_path_file.c_str());
 //        Writer::writeToFileTUMFormat(graph,result_cam_file_tum_format.c_str());
 

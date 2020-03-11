@@ -69,39 +69,6 @@ void Frontend::ExtractAndMatchFeatures(FrameVector &frameVector, const std::stri
 
         auto ref_id = detectLoopClosure(feature_db,frame);
         pref_frame = &frameVector[ref_id];
-//        DBoW2::QueryResults ret;
-//        feature_db.query(frame.mKepoint_descriptors,ret,3);
-//        feature_db.add(frame.mKepoint_descriptors);
-//        std::cout<<ret<<std::endl;
-
-//        if(!ret.empty())
-//        {
-//            std::sort(ret.begin(), ret.end(),
-//                    [](DBoW2::Result a, DBoW2::Result b)
-//            {
-//                return a.Id < b.Id;
-//            });
-////            std::cout<<ret<<std::endl;
-////            for(auto r : ret)
-////            {
-////                std::vector<DMatch> matches_temp;
-////                auto temp_ref = frameVector[r.Id];
-////                matchORB(frame.mDescriptior,temp_ref.mDescriptior,matches_temp);
-////
-////            }
-//            if(ret[0].Score < 0.1 || abs(frame.mGlobalIndex - ret[0].Id) < 20) //todo
-//            {
-//                pref_frame = &(*(frame_it - 1));
-//            }
-//            else
-//            {
-//                pref_frame = &frameVector[ret[0].Id];
-//            }
-//        }
-//        else
-//        {
-//            pref_frame = &(*(frame_it - 1));
-//        }
 
         Frame& ref_frame = *pref_frame;
         matchORB(frame.mDescriptior,ref_frame.mDescriptior,matches);
@@ -501,10 +468,10 @@ int Frontend::detectLoopClosure(OrbDatabase& db, const BAMapping::Frame &frame)
     DBoW2::QueryResults ret;
     db.query(frame.mKepoint_descriptors,ret,3);
     db.add(frame.mKepoint_descriptors);
-    auto best_id = ret[0].Id;
 
     if(!ret.empty())
     {
+        auto best_id = ret[0].Id;
         std::sort(ret.begin(), ret.end(),
                   [](DBoW2::Result a, DBoW2::Result b)
                   {
