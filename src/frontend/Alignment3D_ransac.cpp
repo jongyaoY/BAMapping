@@ -53,17 +53,39 @@ bool Alignment3D_ransac::Align(
         if((float)inliers_max.size()/source.size() > params.inlier_threshold)
             break;
     }
-    std::vector<Vec3> p_est;
-    std::vector<Vec3> q_est;
     Mat3 R_est;
     Vec3 t_est;
-    for(auto id : inliers_max)
+    auto inliers_curr = inliers_max;
+    auto inliers_rate_cur = (float) inliers_curr.size() / source.size();
+    auto inliers_rate = (float) inliers_max.size()/source.size();
+    for(int it = 0; it < 10 ; it++)
     {
-        p_est.push_back(source[id]);
-        q_est.push_back(target[id]);
+        std::vector<Vec3> p_est;
+        std::vector<Vec3> q_est;
+        for(auto id : inliers_curr)
+        {
+            p_est.push_back(source[id]);
+            q_est.push_back(target[id]);
+        }
+        bool success = estimate(p_est,q_est,R_est,t_est);
+
+        inliers_curr.clear();
+        for(int i = 0; i < source.size(); i++)
+        {
+            bool in = isInlier(source[i],target[i],R_est,t_est,params.distance_threshold);
+            if(in)
+                inliers_curr.push_back(i);
+        }
+        inliers_rate_cur = (float) inliers_curr.size() / source.size();
+        if((inliers_rate_cur - inliers_rate) < 0.01)
+            break;
+        else
+        {
+            inliers_rate = inliers_rate_cur;
+        }
     }
-    bool success = estimate(p_est,q_est,R_est,t_est);
-    if(success)
+    inliers_max = inliers_curr;
+//    if(success)
     {
         Tst.block<3,3>(0,0) = R_est;
         Tst.block<3,1>(0,3) = t_est;

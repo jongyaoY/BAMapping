@@ -12,7 +12,7 @@ void Mapping::updateMap(Frame &frame, Frame &ref_frame, std::vector<cv::DMatch> 
     struct Project
     {
     public:
-        bool operator ()(const Vec3 obs,const Vec4 intrinsics,Vec3& point)
+        bool operator ()(const Vec3 obs,const Vec4 intrinsics, Vec3& point, Mat4 Twc)
         {
             auto fx = intrinsics[0];
             auto fy = intrinsics[1];
@@ -24,6 +24,8 @@ void Mapping::updateMap(Frame &frame, Frame &ref_frame, std::vector<cv::DMatch> 
             if(d < 0.001 || d > 4.0)
                 return false;
             point = Vec3((u-cx)*d/fx,(v-cy)*d/fy,d);
+//            Mat4 Tcw = Twc.inverse();
+            point = Twc.block<3,3>(0,0) * point + Twc.block<3,1>(0,3);
             return true;
         }
     }project;
@@ -47,10 +49,12 @@ void Mapping::updateMap(Frame &frame, Frame &ref_frame, std::vector<cv::DMatch> 
 
                 bool valid_point = project(Vec3(kp.pt.x,kp.pt.y,kp_d),
                         Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),
-                        point.pose_);
+                        point.pose_,
+                           frame.Tcw_.inverse());
                 bool valid_ref_point = project(Vec3(ref_kp.pt.x,ref_kp.pt.y,ref_kp_d),
                         Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),
-                        point_ref.pose_);
+                        point_ref.pose_,
+                        ref_frame.Tcw_.inverse());
                 if(!valid_ref_point || !valid_point)
                 {
                     continue;
@@ -77,7 +81,8 @@ void Mapping::updateMap(Frame &frame, Frame &ref_frame, std::vector<cv::DMatch> 
             MapPoint mapPoint_ref;
             bool valid_point = project(Vec3(kp.pt.x,kp.pt.y,kp_d),
                                        Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),
-                                       mapPoint.pose_);
+                                       mapPoint.pose_,
+                                       frame.Tcw_.inverse());
             if(valid_point)
             {
                 mapPoint_ref = *ref_frame.mpMapPoints[j];
