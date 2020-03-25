@@ -131,6 +131,7 @@ double Frame::m_fx = 431.828094;
 double Frame::m_fy = 431.828094;
 double Frame::m_cx = 323.000610;
 double Frame::m_cy = 240.218506;
+double Frame::m_depth_factor;
 //distortion coefficients
 double Frame::m_k1;
 double Frame::m_k2;

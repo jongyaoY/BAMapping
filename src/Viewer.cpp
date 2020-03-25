@@ -123,6 +123,11 @@ namespace BAMapping
                 for(auto point : m_points)
                 {
                     drawPoint(point,mPointColor);
+
+                }
+                for(auto point : m_mMapPoints)
+                {
+                    drawMapPoint(point,mPointColor);
                 }
             }
             if(menuShowRefPoints)
@@ -163,6 +168,17 @@ namespace BAMapping
         }
     }
 
+    void Viewer::drawMapPoint(const BAMapping::MapPoint point, GLfloat *color)
+    {
+        auto p = point.pose_;
+        glPointSize(mPointSize); //cm
+        glBegin(GL_POINTS);
+        glColor3f(color[0],color[1],color[2]);
+        glVertex3f(p[0],p[1],p[2]);
+
+        glEnd();
+    }
+
     void Viewer::drawPoint(Point point, GLfloat *color)
     {
         auto p = point.getPoseInWorld();
@@ -179,6 +195,8 @@ namespace BAMapping
 
         Eigen::Matrix4d Twc;
         Twc = frame.getConstTwc();
+
+
         Eigen::Affine3f T;
         T.matrix() = Twc.cast<float>();
 

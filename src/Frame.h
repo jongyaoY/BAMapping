@@ -56,6 +56,8 @@ namespace BAMapping
         std::vector<size_t> mKeyPointGlobalIds;
         std::vector<bool> keyPoint_has_match;
         std::vector<cv::KeyPoint> mKeypoints;
+        std::vector<double> mKeyPointsDepth;
+
         std::vector<MapPoint::Ptr> mpMapPoints;
         cv::Mat mDescriptior;
         std::vector<cv::Mat> mKepoint_descriptors;
@@ -67,7 +69,13 @@ namespace BAMapping
         static double m_fy;
         static double m_cx;  //principle point x
         static double m_cy;  //principle point y
+        static double m_depth_factor;
+        //distortion coefficients
+        static double m_k1;   //(u',v') = (cx,cy) + (1 + k1*r^2 + k2*r^4)*(u-cx,v-cy);
+        static double m_k2;   //r^2 = (u - cx)^2 + (v - cy)^2
 
+
+        Eigen::Matrix4d Tcw_;
     private:
         double mTimeStamp;
         std::string m_rgbImgPath;
@@ -78,9 +86,7 @@ namespace BAMapping
         Eigen::Vector3d m_translation;
 
 
-        //distortion coefficients
-        static double m_k1;   //(u',v') = (cx,cy) + (1 + k1*r^2 + k2*r^4)*(u-cx,v-cy);
-        static double m_k2;   //r^2 = (u - cx)^2 + (v - cy)^2
+
 
     };
     typedef std::vector<Frame> FrameVector;

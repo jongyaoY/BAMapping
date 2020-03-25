@@ -18,6 +18,7 @@ namespace BAMapping
         void visualizeMap();
         void visualize();
         inline void setMap(Frontend::Map* pMap){m_pMap = pMap;}
+        inline void setPoints(const std::vector<MapPoint>& points) {m_mMapPoints = points;}
         inline void setRefPoints(PointVector points){m_refPoints = points;}
         inline void setPoints(PointVector points){m_points = points;}
         inline void setFrames(FrameVector frames){m_frames = frames;}
@@ -26,7 +27,7 @@ namespace BAMapping
     private:
         void drawMapPoints();
         void drawMapFrames();
-
+        void drawMapPoint(const MapPoint point, GLfloat* color);
         void drawPoint(const Point point, GLfloat* color);
         void drawFrame(const Frame frame);
         void drawXYPlane();
@@ -34,6 +35,7 @@ namespace BAMapping
         PointVector m_points;
         PointVector m_refPoints;
         FrameVector m_frames;
+        std::vector<MapPoint> m_mMapPoints;
 
         float mKeyFrameSize;
         float mKeyFrameLineWidth;

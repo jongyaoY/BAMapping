@@ -234,12 +234,7 @@ void BundleAdjuster::optimizePose(Mat4 &Twc, const Mat4 &Twc_ref, const Vec4 &in
     problem.SetParameterBlockConstant(&cam_ref(0));
 
     ceres::Solver::Options options;
-//    options.gradient_tolerance = 10e-30;
-//    options.function_tolerance = 10e-20;
-//    options.use_nonmonotonic_steps = true;
-//    options.preconditioner_type = ceres::SCHUR_JACOBI;
-//    options.linear_solver_type = ceres::ITERATIVE_SCHUR;
-//    options.use_inner_iterations = false;
+
     options.max_num_iterations = 10;
     options.minimizer_progress_to_stdout = false;
 

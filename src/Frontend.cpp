@@ -4,12 +4,13 @@
 
 #include "Frontend.h"
 #include "BundleAdjuster.h"
-#include <iostream>
 #include "opencv2/highgui.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 #include "Eigen/Geometry"
+#include <random>
+#include <iostream>
 using namespace BAMapping;
 
 
@@ -306,10 +307,152 @@ void Frontend::alignFrames(BAMapping::Frame &frame,const Mat4 last_Twc, const BA
     frame.setFromAffine3d(Tcw_aff);
 }
 
+void Frontend::odometry(BAMapping::Frame &frame, const BAMapping::Frame &ref_frame,
+                        const std::vector<cv::DMatch> &matches)
+{
+    using namespace cv;
+    Mat depth_img = imread(frame.getDepthImagePath(),IMREAD_UNCHANGED);
+    Mat ref_depth_img = imread(ref_frame.getDepthImagePath(),IMREAD_UNCHANGED);
+    depth_img.convertTo(depth_img,CV_32F,1.0/1000.0);
+    ref_depth_img.convertTo(ref_depth_img,CV_32F,1.0/1000.0);
+    std::vector<Vec3> obs_vec;
+    std::vector<Vec3> ref_obs_vec;
+//    std::vector<Vec3> ref_points;
+    for(const auto& match : matches)
+    {
+        auto kp = frame.mKeypoints[match.queryIdx];
+        auto ref_kp = ref_frame.mKeypoints[match.trainIdx];
+        double u = kp.pt.x;
+        double v = kp.pt.y;
+        double d = depth_img.at<float>(kp.pt);
+        if(d <= 0.01 || d > 3.0) //todo
+        {
+            continue;
+        }
+        double u_ref = ref_kp.pt.x;
+        double v_ref = ref_kp.pt.y;
+        double d_ref = ref_depth_img.at<float>(ref_kp.pt);
+        if(d_ref <= 0.01 || d_ref> 3.0) //todo
+        {
+            continue;
+        }
+        obs_vec.push_back(Vec3(u,v,d));
+        ref_obs_vec.push_back(Vec3(u_ref,v_ref,d_ref));
+    }
+    auto Twc_ref = ref_frame.getConstTwc();
+    auto Twc = Twc_ref;
+    ransac_run(Twc,Twc_ref,Vec4(frame.m_fx,frame.m_fy,frame.m_cx,frame.m_cy),obs_vec,ref_obs_vec);
+
+    Eigen::Affine3d Tcw_aff;
+    Tcw_aff.matrix() = Twc.inverse();
+    frame.setFromAffine3d(Tcw_aff);
+}
+
+void Frontend::ransac_run(Mat4 &Twc, const Mat4 &Twc_ref, const Vec4 &intrinsics,
+                          const std::vector<Vec3> &obs_vec, const std::vector<Vec3> &ref_obs_vec, const int point_num,
+                          const int iter, const double thres)
+{
+    auto Twc_cur = Twc;
+    std::vector<size_t> outlierNum;
+    std::vector<Mat4> Twc_vec;
+    if(obs_vec.empty())
+        return;
+
+    for(int it = 0; it < iter; it++)
+    {
+        auto ids = generateRandomIds(point_num,obs_vec.size()-1);
+        std::vector<Vec3> obs_cur,obs_ref_cur;
+        for(auto id : ids)
+        {
+            obs_cur.push_back(obs_vec[id]);
+            obs_ref_cur.push_back(ref_obs_vec[id]);
+        }
+        BundleAdjuster::optimizePose(Twc_cur,Twc_ref,intrinsics,obs_cur,obs_ref_cur);
+        auto outliers = getOulierIds(Twc_cur,Twc_ref,intrinsics,obs_vec,ref_obs_vec,0.01);
+        outlierNum.push_back(outliers.size());
+        Twc_vec.push_back(Twc_cur);
+    }
+    int min_outlierNum = obs_vec.size();
+    int min_id = 0;
+    for(int i = 0; i < outlierNum.size(); i++)
+    {
+        if(outlierNum[i] < min_outlierNum)
+        {
+            min_outlierNum = outlierNum[i];
+            min_id = i;
+        }
+    }
+    Twc = Twc_vec[min_id];
+//    std::cout<<Twc<<std::endl;
+    std::cout<<"outliers: "<<min_outlierNum<<std::endl;
+}
+
+std::vector<size_t> Frontend::getOulierIds(
+        const Mat4 &Twc, const Mat4 &Twc_ref,
+        const Vec4& intrinsics,
+        const std::vector<Vec3> &obs_vec, const std::vector<Vec3> &ref_obs_vec,
+        const double thres)
+{
+    struct Project
+    {
+    public:
+        Vec3 operator ()(Vec3 obs,Vec4 intrinsics)
+        {
+            auto fx = intrinsics[0];
+            auto fy = intrinsics[1];
+            auto cx = intrinsics[2];
+            auto cy = intrinsics[3];
+            auto u = obs[0];
+            auto v = obs[1];
+            auto d = obs[2];
+            return Vec3((u-cx)*d/fx,(v-cy)*d/fy,d);
+        }
+    }project;
+    std::vector<size_t> outliers;
+    Eigen::Affine3d Twc_aff,Twc_ref_aff;
+    Twc_aff.matrix() = Twc;
+    Twc_ref_aff = Twc_ref;
+    for(int i = 0; i < obs_vec.size(); i++)
+    {
+        auto p = project(obs_vec[i],intrinsics);
+        auto p_ref = project(ref_obs_vec[i],intrinsics);
+        p = Twc_aff * p;
+        p_ref = Twc_ref_aff * p_ref;
+        if((p-p_ref).dot(p-p_ref) > thres)
+        {
+            outliers.push_back(i);
+        }
+    }
+    return outliers;
+}
+
+std::vector<size_t> Frontend::generateRandomIds(int num, int max_id)
+{
+    std::vector<size_t> ids;
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0,max_id);
+    for(int i = 0; i < num; i++)
+    {
+        for(int j = 0; j < 10; j++)
+        {
+            size_t rand_id = dist(rng);
+            auto it = std::find(ids.begin(),ids.end(),rand_id);
+            if(it == std::end(ids))
+            {
+                ids.push_back(rand_id);
+                break;
+            }
+        }
+    }
+
+    return ids;
+}
+
 void Frontend::ExtractAndCreateDatabase(BAMapping::FrameVector &frameVector, const std::string voc_path, const std::string db_path)
 {
     using namespace cv;
-    Ptr<ORB> orb_detector = ORB::create(500);
+    Ptr<ORB> orb_detector = ORB::create(1000);
 
     std::cout<<"loading vocabulary..."<<std::endl;
     OrbVocabulary voc;

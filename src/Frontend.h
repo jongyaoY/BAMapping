@@ -8,7 +8,6 @@
 #include "Frame.h"
 //#include "Viewer.h"
 #include "MapPoint.h"
-#include "DBoW2.h"
 #include "math/Types.h"
 #include "opencv2/core.hpp"
 #include "opencv2/features2d.hpp"
@@ -116,6 +115,20 @@ namespace BAMapping
 
 
         void alignFrames(Frame& frame, const Mat4 last_Twc ,const Frame& ref_frame,const std::vector<cv::DMatch>& matches);
+
+        std::vector<size_t> getOulierIds(const Mat4& Twc, const Mat4& Twc_ref,
+                                         const Vec4& intrinsics,
+                                         const std::vector<Vec3>& obs_vec, const std::vector<Vec3>& ref_obs_vec,
+                                         const double thres);
+        void ransac_run(Mat4& Twc, const Mat4& Twc_ref,
+                        const Vec4& intrinsics,
+                        const std::vector<Vec3>& obs_vec, const std::vector<Vec3>& ref_obs_vec,
+                        const int point_num = 5,
+                        const int iter = 100,
+                        const double thres = 0.05);
+
+        std::vector<size_t> generateRandomIds(int num, int max_id);
+        void odometry(Frame& frame, const Frame& ref_frame,const std::vector<cv::DMatch>& matches);
 
         void removeOutliers(const Frame& frame_query, const Frame& frame_train, std::vector<cv::DMatch>& matches, const double thres = 0.5);
 
