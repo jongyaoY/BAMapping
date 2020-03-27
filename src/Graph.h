@@ -34,6 +34,7 @@ namespace BAMapping
         {
         public:
             Node(Mat4 Twc) : pose_(Twc){}
+            double timeStamp_;
             Mat4 pose_;
             int ite_frame_id;
             std::string rgb_path_;

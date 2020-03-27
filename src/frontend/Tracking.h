@@ -19,6 +19,7 @@ namespace BAMapping
         {
         public:
             static bool track(Frame& frame,const Frame* pRef_frame,std::vector<cv::DMatch> &inlier_matches);
+            static bool match(const Frame& frame, const Frame& ref_frame, std::vector<cv::DMatch> &inlier_matches);
         private:
             static void ExtractORB(Frame& frame);
             static void MatchORB(const cv::Mat &query, const cv::Mat &target, std::vector<cv::DMatch> &goodMatches);

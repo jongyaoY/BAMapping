@@ -20,6 +20,9 @@ namespace BAMapping
             static PointVector readPoints(const char *point_file);
 
             static FrameVector readTUMFrames(const std::string dataSetPath, const std::string assoFileName);
+            static FrameVector readTUMFrames(const std::string dataSetPath, const std::string cam_file ,const std::string assoFileName);
+            static void readObservations(const std::string obs_file, FrameVector& frameVector);
+
         };
     }
 

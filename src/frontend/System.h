@@ -20,6 +20,7 @@ namespace BAMapping
 
             Mapping mMap;
         private:
+            static std::vector<size_t> generateRandomIds(int num, int max_id, int min_id);
         };
     }
 }

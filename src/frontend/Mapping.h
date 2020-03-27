@@ -8,6 +8,7 @@
 #include "../Frame.h"
 #include "../MapPoint.h"
 #include "../math/Types.h"
+
 namespace BAMapping
 {
     namespace FrontEnd
@@ -16,7 +17,7 @@ namespace BAMapping
         {
 
         public:
-            void updateMap(Frame& frame, Frame& ref_frame, std::vector<cv::DMatch> matches);
+            void updateMap(Frame& frame, Frame& ref_frame, std::vector<cv::DMatch> matches,bool loopClosure);
             inline std::vector<MapPoint> getMapPoints(){return m_map_points;}
         private:
             std::vector<MapPoint> m_map_points;

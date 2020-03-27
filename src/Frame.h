@@ -65,6 +65,8 @@ namespace BAMapping
         size_t mITEId;
 
         //intrisic parameters
+        static int m_width;
+        static int m_height;
         static double m_fx;
         static double m_fy;
         static double m_cx;  //principle point x

@@ -127,6 +127,7 @@ void Frame::generateObservations()
 }
 
 //intrisic parameters
+
 double Frame::m_fx = 431.828094;
 double Frame::m_fy = 431.828094;
 double Frame::m_cx = 323.000610;
@@ -135,3 +136,5 @@ double Frame::m_depth_factor;
 //distortion coefficients
 double Frame::m_k1;
 double Frame::m_k2;
+int Frame::m_width;
+int Frame::m_height;

@@ -15,7 +15,9 @@ namespace BAMapping
 
         static void writePoses(const FrameVector& frameVector, const char* cam_filename);
         static void writeObservations(const FrameVector& frameVector, const char* obs_filename);
+        static void writeObservationsNormal(const FrameVector& frameVector, const char* obs_filename);
         static void writePoints(const Frontend::Map& map, const char* point_filename);
+        static void writePoints(const std::vector<MapPoint> points, const char* point_filename);
     };
 }
 

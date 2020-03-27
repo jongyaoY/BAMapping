@@ -25,6 +25,8 @@ bool Alignment3D_ransac::Align(
     {
         return false;
     }
+
+    //ransac find set of inliers
     for(int it = 0; it < params.iterations; it++)
     {
         std::vector<size_t> inliers_cur;
@@ -53,6 +55,7 @@ bool Alignment3D_ransac::Align(
         if((float)inliers_max.size()/source.size() > params.inlier_threshold)
             break;
     }
+    //estimate R | t with inliers
     Mat3 R_est;
     Vec3 t_est;
     auto inliers_curr = inliers_max;
@@ -77,7 +80,7 @@ bool Alignment3D_ransac::Align(
                 inliers_curr.push_back(i);
         }
         inliers_rate_cur = (float) inliers_curr.size() / source.size();
-        if((inliers_rate_cur - inliers_rate) < 0.01)
+        if((inliers_rate_cur - inliers_rate) < 0.1)
             break;
         else
         {
@@ -91,7 +94,7 @@ bool Alignment3D_ransac::Align(
         Tst.block<3,1>(0,3) = t_est;
     }
 
-    std::cout<<inliers_max.size()<<"/"<<source.size()<<","<<(float)inliers_max.size()/source.size()<<std::endl;
+//    std::cout<<inliers_max.size()<<"/"<<source.size()<<","<<(float)inliers_max.size()/source.size()<<std::endl;
     inliers = inliers_max;
     return true;
 }

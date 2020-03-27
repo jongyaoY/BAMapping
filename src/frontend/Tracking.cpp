@@ -4,6 +4,7 @@
 
 #include "Tracking.h"
 #include "Alignment3D_ransac.h"
+#include "../GeometryMethods.h"
 
 #include "opencv2/highgui.hpp"
 #include "opencv2/xfeatures2d.hpp"
@@ -17,7 +18,11 @@ bool Tracking::track(Frame &frame, const Frame* pRef_frame, std::vector<cv::DMat
     ExtractORB(frame);
     if(pRef_frame == NULL)
     {
+        Eigen::Affine3d Tcw;
         frame.Tcw_ = Mat4::Identity();
+        Tcw.matrix() = frame.Tcw_;
+        frame.setFromAffine3d(Tcw);
+
         return true;
     }
     auto ref_frame = *pRef_frame;
@@ -29,12 +34,39 @@ bool Tracking::track(Frame &frame, const Frame* pRef_frame, std::vector<cv::DMat
     std::vector<Vec3> points;
     std::vector<Vec3> ref_points;
     std::vector<size_t> inliers;
-    Mat4 Tst;
+    Mat4 Tts;
     auto matches_valid = GetSparsePointClouds(frame,ref_frame,matches,points,ref_points);
 
-    Alignment3D_ransac::Align(points,ref_points,Tst,inliers,Alignment3D_ransac::Params());
+    Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
 
-    frame.Tcw_ = Tst * ref_frame.Tcw_;
+    Eigen::Affine3d Tcw;
+    frame.Tcw_ = Tts.inverse() * ref_frame.Tcw_;
+    Tcw.matrix() = frame.Tcw_;
+    frame.setFromAffine3d(Tcw);
+//    Tcw.matrix() = ref_frame.Tcw_;
+
+//    Graph::Node node_s(frame.getConstTwc());
+//    Graph::Node node_t(ref_frame.getConstTwc());
+//    node_s.rgb_path_ = frame.getRGBImagePath();
+//    node_s.depth_path_ = frame.getDepthImagePath();
+//    node_t.rgb_path_ = ref_frame.getRGBImagePath();
+//    node_t.depth_path_ = ref_frame.getDepthImagePath();
+//
+//    std::shared_ptr<open3d::geometry::PointCloud> pcd_s;
+//    std::shared_ptr<open3d::geometry::PointCloud> pcd_t;
+
+//    GeometryMethods::createPointCloudFromNode(
+//            node_s,
+//            Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),Frame::m_width,Frame::m_height,
+//            pcd_s,
+//            true);
+//    GeometryMethods::createPointCloudFromNode(
+//            node_t,
+//            Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),Frame::m_width,Frame::m_height,
+//            pcd_t,
+//            true);
+//
+//    open3d::visualization::DrawGeometries({pcd_s,pcd_t});
 
     for(auto id : inliers)
     {
@@ -65,6 +97,37 @@ bool Tracking::track(Frame &frame, const Frame* pRef_frame, std::vector<cv::DMat
     return true;
 }
 
+bool Tracking::match(const BAMapping::Frame &frame, const BAMapping::Frame& ref_frame,
+                     std::vector<cv::DMatch> &inlier_matches)
+{
+    using namespace cv;
+    std::vector<DMatch> matches;
+//    std::vector<DMatch> matches_inliers;
+    inlier_matches.clear();
+
+    MatchORB(frame.mDescriptior,ref_frame.mDescriptior,matches);
+    std::vector<Vec3> points;
+    std::vector<Vec3> ref_points;
+    std::vector<size_t> inliers;
+    Mat4 Tts;
+    auto matches_valid = GetSparsePointClouds(frame,ref_frame,matches,points,ref_points);
+
+    Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
+    for(auto id : inliers)
+    {
+        inlier_matches.push_back(matches_valid[id]);
+    }
+    float score = (float) inlier_matches.size() / (float) frame.mKeypoints.size();
+    if(score < 0.1 || inlier_matches.size()<5) //todo
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
 void Tracking::ExtractORB(BAMapping::Frame &frame)
 {
     using namespace cv;
@@ -92,7 +155,7 @@ void Tracking::ExtractORB(BAMapping::Frame &frame)
         frame.mKeyPointsDepth.push_back(d);
     }
     frame.mDescriptior = descriptors.clone();
-    frame.mpMapPoints.resize(frame.mKeypoints.size(),NULL);
+    frame.mpMapPoints.resize(frame.mKeypoints.size(), nullptr);
     frame.mKeyPointGlobalIds.resize(frame.mKeypoints.size());
     frame.keyPoint_has_match.resize(frame.mKeypoints.size(),false);
 }
@@ -109,7 +172,7 @@ std::vector<cv::DMatch> Tracking::GetSparsePointClouds(const BAMapping::Frame &f
     }
     frame_pt.clear();
     ref_frame_pt.clear();
-    struct Project
+    struct
     {
     public:
         Vec3 operator ()(Vec3 obs,Vec4 intrinsics)

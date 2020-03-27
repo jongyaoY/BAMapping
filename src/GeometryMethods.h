@@ -14,7 +14,7 @@ namespace BAMapping
     class GeometryMethods
     {
     public:
-        static bool createRGBDImageFromNode(const Graph::Node& node, const Parser config, open3d::geometry::RGBDImage& rgbd, bool useIRImg = true);
+        static bool createRGBDImageFromNode(const Graph::Node& node, double depth_factor,double depth_truncate, open3d::geometry::RGBDImage& rgbd, bool useIRImg = true);
 
         static bool createPointCloundFromNodes(
                 const std::vector<Graph::Node> nodes,
@@ -25,6 +25,14 @@ namespace BAMapping
         static bool createPointCloudFromNode(
                 const Graph::Node node,
                 const Parser config,
+                std::shared_ptr<open3d::geometry::PointCloud>& pcd,
+                bool color = false
+        );
+        static bool createPointCloudFromNode(
+                const Graph::Node node,
+                const Vec4& intrisics,
+                const size_t width,
+                const size_t height,
                 std::shared_ptr<open3d::geometry::PointCloud>& pcd,
                 bool color = false
         );

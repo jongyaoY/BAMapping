@@ -167,8 +167,8 @@ bool Integrater::createRGBDImage(Parser config, const char *depth_file, const ch
 
     geometry::Image depth;
     geometry::Image rgb;
-    double depth_factor = config.getValue<double>("depth_factor");
-    double depth_truncate = config.getValue<double>("depth_truncate");
+    double depth_factor = config.getValue<double>("Integrater.depth_factor");
+    double depth_truncate = config.getValue<double>("Integrater.depth_truncate");
 
     bool read = false;
     read = io::ReadImage(depth_file, depth);
@@ -192,8 +192,8 @@ bool Integrater::createRGBDImageFromFrame(const Frame frame, Parser config, open
     geometry::Image depth;
     geometry::Image infraRed;
     geometry::Image rgb;
-    double depth_factor = config.getValue<double>("depth_factor");
-    double depth_truncate = config.getValue<double>("depth_truncate");
+    double depth_factor = config.getValue<double>("Integrater.depth_factor");
+    double depth_truncate = config.getValue<double>("Integrater.depth_truncate");
 
     bool read = false;
     read = io::ReadImage(frame.getDepthImagePath().c_str(), depth);

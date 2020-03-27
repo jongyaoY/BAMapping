@@ -23,8 +23,8 @@ void Writer::writeToFileTUMFormat(const Graph &graph, const char *cam_filename)
         Eigen::Quaterniond q(Twc.block<3,3>(0,0));
         Eigen::Vector3d translation = Twc.block<3,1>(0,3);
 
-        fprintf(fptr,"%f %lf %lf %lf %lf %lf %lf %lf\n",
-                fake_timestamp,
+        fprintf(fptr,"%lf %lf %lf %lf %lf %lf %lf %lf\n",
+                node.timeStamp_,
                 translation[0],
                 translation[1],
                 translation[2],
@@ -125,6 +125,43 @@ void Writer::writeObservations(const FrameVector &frameVector, const char *obs_f
 
             fprintf(fptr,"%lu %lu %d %d %f\n",point_id,frame_id,u,v,d);
         }
+    }
+    fclose(fptr);
+}
+
+void Writer::writeObservationsNormal(const FrameVector &frameVector, const char *obs_filename)
+{
+    FILE* fptr = fopen(obs_filename, "w");
+    size_t frame_id = 0;
+    for(const auto& frame : frameVector)
+    {
+
+        for(const auto& obs : frame.mObservations)
+        {
+            auto point_id = obs.first;
+            auto obs_vec = obs.second;
+            int u = static_cast<int>(obs_vec[0]);
+            int v = static_cast<int>(obs_vec[1]);
+            float d = static_cast<float>(obs_vec[2]);
+
+            fprintf(fptr,"%lu %lu %d %d %f\n",point_id,frame_id,u,v,d);
+        }
+        frame_id++;
+    }
+    fclose(fptr);
+}
+
+void Writer::writePoints(const std::vector<MapPoint> points, const char *point_filename)
+{
+    FILE* fptr = fopen(point_filename, "w");
+    for(int i = 0; i < points.size(); i++)
+    {
+        const auto& point = points[i];
+        auto x = static_cast<float> (point.pose_[0]);
+        auto y = static_cast<float> (point.pose_[1]);
+        auto z = static_cast<float> (point.pose_[2]);
+
+        fprintf(fptr,"%lu %f %f %f\n", point.id,x,y,z);
     }
     fclose(fptr);
 }

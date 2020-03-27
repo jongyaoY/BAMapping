@@ -30,6 +30,78 @@ BAMapping::FrameVector Reader::readTUMFrames(const std::string dataSetPath, cons
     return frameVector;
 }
 
+BAMapping::FrameVector Reader::readTUMFrames(const std::string dataSetPath, const std::string cam_file, const std::string assoFileName)
+{
+    FrameVector frameVector;
+    frameVector = Reader::readTUMFrames(dataSetPath,assoFileName);
+    auto camFilePtr = fopen(cam_file.c_str(),"r");
+
+    int id = 0;
+    while(!feof(camFilePtr))
+    {
+        float fake_timestamp;
+
+
+        double qx,qy,qz,qw;
+        double x,y,z;
+        //Twc
+        int scan = fscanf(camFilePtr,"%f %lf %lf %lf %lf %lf %lf %lf\n",
+                &fake_timestamp,
+                &x,
+                &y,
+                &z,
+                &qx,
+                &qy,
+                &qz,
+                &qw
+        );
+        if(scan!=8)
+            break;
+        auto q = Eigen::Quaterniond(qw,qx,qy,qz);
+        Vec3  translation(x,y,z);
+        auto R = Eigen::AngleAxisd(q).inverse().toRotationMatrix();
+        translation = R * translation;
+        translation *= -1;
+
+        frameVector[id].setFromQuaternionAndPoint(q.inverse(),translation);
+        id++;
+    }
+    fclose(camFilePtr);
+    return frameVector;
+}
+
+void Reader::readObservations(const std::string obs_file, FrameVector &frameVector)
+{
+    FILE* pF_obs;
+    pF_obs = fopen(obs_file.c_str(),"r");
+    if(pF_obs == NULL)
+    {
+        printf("failed to read observation file\n");
+        return;
+    }
+
+    while(!feof(pF_obs))
+    {
+        Eigen::Vector3d obs;
+        int u, v;
+        float d;
+        unsigned int cam_id;
+        unsigned int point_id;
+        int num_scanned = fscanf(pF_obs, "%d %d %d %d %f", &point_id, &cam_id, &u, &v, &d);
+        if (num_scanned != 5)
+            break;
+        obs[0] = static_cast<double>(u);
+        obs[1] = static_cast<double>(v);
+        obs[2] = d;
+
+        if(cam_id < frameVector.size() && cam_id>0)
+        {
+            frameVector[cam_id].addObservation(point_id,obs);
+        }
+    }
+    fclose(pF_obs);
+}
+
 BAMapping::FrameVector Reader::readITEFormat(const char *cam_file, const char *img_path_file)
 {
     FILE* pf_camera_file = fopen(cam_file,"r");

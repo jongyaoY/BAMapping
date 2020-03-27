@@ -4,9 +4,10 @@
 #include "../io/Reader.h"
 //#include "../Frontend.h"
 #include "../io/Writer.h"
+#include "../Graph.h"
 #include "../Viewer.h"
+#include "../Integrater.h"
 #include "../frontend/System.h"
-
 int main(int argc, char** argv)
 {
     using namespace BAMapping;
@@ -18,17 +19,28 @@ int main(int argc, char** argv)
     std::string dataset_path = argv[1];
     std::string asso_path = "ass.txt";
     std::string config_file = dataset_path + "TUM_frontend.yaml";
+
+    std::string cam_file = dataset_path + "cameras.txt";
+    std::string point_file = dataset_path + "points.txt";
+    std::string obs_file = dataset_path + "observations.txt";
+    std::string ply_path = dataset_path + "result.ply";
     auto frameVec = io::Reader::readTUMFrames(dataset_path,asso_path);
     std::cout<<frameVec.size()<<std::endl;
     FrontEnd::System frontend;
     frontend.run(frameVec,config_file);
 
-    for(auto& frame : frameVec)
-    {
-        Eigen::Affine3d T;
-        T.matrix() = frame.Tcw_;
-        frame.setFromAffine3d(T);//Tcw;
-    }
+    //for non ITE dataset
+    Writer::writeObservationsNormal(frameVec,obs_file.c_str());
+    Writer::writePoints(frontend.mMap.getMapPoints(),point_file.c_str());
+    Graph graph;
+    graph.setGraph(frameVec,{});
+
+    Writer::writeToFileTUMFormat(graph,cam_file.c_str());
+
+//    frameVec.clear();
+//    frameVec = io::Reader::readTUMFrames(dataset_path,cam_file,asso_path);
+
+    Integrater::integrateGraph(graph,config_file.c_str(),ply_path.c_str(), false,Mat4::Identity(),true);
     Viewer viewer;
     viewer.setFrames(frameVec);
     viewer.setPoints(frontend.mMap.getMapPoints());

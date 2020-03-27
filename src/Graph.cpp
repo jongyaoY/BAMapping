@@ -213,6 +213,7 @@ void Graph::setGraph(FrameVector frameVector, PointVector pointVector)
 
         Graph::Node node(Tc0w * frame.getConstTwc());
 
+        node.timeStamp_ = frame.getTimeStamp();
         node.ite_frame_id = frame.mITEId;
         node.rgb_path_ = frame.getRGBImagePath();
         node.depth_path_ = frame.getDepthImagePath();
@@ -346,6 +347,7 @@ FrameVector Graph::copyFrames(const Eigen::Matrix4d Twc0) const
         Eigen::Affine3d Twc_affine;
         Twc_affine.matrix() = Twc0 * Tc0cn ;
 
+        frame.setTimeStamp(node.timeStamp_);
         frame.mITEId = node.ite_frame_id;
         frame.setFromAffine3d(Twc_affine.inverse());
         frame.setImagePaths(nodes_[i].rgb_path_.c_str(),nodes_[i].depth_path_.c_str(),nodes_[i].ir_path_.c_str());
@@ -383,7 +385,7 @@ void Graph::WriteToFile(const Graph &graph, const char *filename)
         Value node_val(kObjectType);
         Value pose(kArrayType);
         Value id;
-
+        Value timeStamp;
         for(int i = 0; i < node.pose_.rows(); i++)
         {
             for(int j = 0; j < node.pose_.cols(); j++)
@@ -393,8 +395,9 @@ void Graph::WriteToFile(const Graph &graph, const char *filename)
 
         }
         id.SetInt(node.ite_frame_id);
-
+        timeStamp.SetDouble(node.timeStamp_);
         node_val.AddMember("id",id,allocator);
+        node_val.AddMember("timeStamp",timeStamp,allocator);
         node_val.AddMember("pose",pose,allocator);
         node_val.AddMember("ir_path",Value().SetString(node.ir_path_.c_str(),node.ir_path_.length()),allocator);
         node_val.AddMember("rgb_path",Value().SetString(node.rgb_path_.c_str(),node.rgb_path_.length()),allocator);
@@ -479,6 +482,7 @@ void Graph::ReadFromeFile(Graph &graph, const char *filename)
         }
         Node node(pose);
         node.ite_frame_id = node_val["id"].GetInt();
+        node.timeStamp_ = node_val["timeStamp"].GetDouble();
         node.ir_path_ = node_val["ir_path"].GetString();
         node.rgb_path_ = node_val["rgb_path"].GetString();
         node.depth_path_ = node_val["depth_path"].GetString();
