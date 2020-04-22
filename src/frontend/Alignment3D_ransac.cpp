@@ -25,7 +25,11 @@ bool Alignment3D_ransac::Align(
     {
         return false;
     }
-
+    if(source.size() < 5)
+    {
+        std::cout<<"less then 5 correspondences"<<std::endl;
+        return false;
+    }
     //ransac find set of inliers
     for(int it = 0; it < params.iterations; it++)
     {
@@ -40,7 +44,10 @@ bool Alignment3D_ransac::Align(
         }
         Mat3 R;
         Vec3 t;
-        estimate(p_cur,q_cur,R,t);
+        bool success = estimate(p_cur,q_cur,R,t);
+
+        if(!success)
+            continue;
 
         for(int i = 0; i < source.size(); i++)
         {
@@ -72,6 +79,11 @@ bool Alignment3D_ransac::Align(
         }
         bool success = estimate(p_est,q_est,R_est,t_est);
 
+        if(!success)
+        {
+            return false;
+        }
+
         inliers_curr.clear();
         for(int i = 0; i < source.size(); i++)
         {
@@ -94,7 +106,6 @@ bool Alignment3D_ransac::Align(
         Tst.block<3,1>(0,3) = t_est;
     }
 
-//    std::cout<<inliers_max.size()<<"/"<<source.size()<<","<<(float)inliers_max.size()/source.size()<<std::endl;
     inliers = inliers_max;
     return true;
 }
@@ -150,6 +161,11 @@ bool Alignment3D_ransac::estimate(
     {
         return false;
     }
+    if(p.size() < 3)
+    {
+        return false;
+    }
+
     Mat3 H;
     H.setZero();
     Vec3 p_cen(0,0,0),q_cen(0,0,0);
@@ -184,8 +200,6 @@ bool Alignment3D_ransac::estimate(
     {
         R = R_;
         t = q_cen - R_ * p_cen;
-//        std::cout<<R_<<std::endl;
-//        std::cout<<R_.determinant()<<std::endl;
         return true;
     }
     else

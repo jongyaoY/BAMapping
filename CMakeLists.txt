@@ -70,10 +70,14 @@ include_directories(${PROJECT_SOURCE_DIR}/libs/orbslam_lib/include)
 add_library(${PROJECT_NAME} SHARED
             src/util/Parser.cpp
             src/Viewer.cpp
-#            src/Reader.cpp
-#            src/Writer.cpp
             src/Integrater.cpp
 #new
+            src/frontend/System.cpp
+            src/frontend/Tracking.cpp
+            src/frontend/Mapping.cpp
+            src/frontend/LoopClosing.cpp
+            src/frontend/Alignment3D_ransac.cpp
+
             src/Frontend.cpp
             src/Graph.cpp
             src/Graph.h
@@ -118,6 +122,10 @@ add_executable(submapOptimization src/submapOptimization.cpp)
 
 target_link_libraries(submapOptimization ${PROJECT_NAME}
                                         ${Open3D_LIBRARIES})
+add_executable(subMapOptimizeTUM src/subMapOptimizeTUM.cpp)
+
+target_link_libraries(subMapOptimizeTUM ${PROJECT_NAME}
+                                    ${Open3D_LIBRARIES})
 
 add_executable(globalOptimization src/globalOptimization.cpp)
 
@@ -148,14 +156,21 @@ add_executable(test_correspondence src/tests/test_correspondence.cpp)
 target_link_libraries(test_correspondence ${PROJECT_NAME}
                                     ${Open3D_LIBRARIES})
 
+add_executable(test_odometry src/tests/test_odometry.cpp)
+
+target_link_libraries(test_odometry ${PROJECT_NAME})
+
 add_executable(test_loopClosure src/tests/test_loopClosure.cpp)
 
 target_link_libraries(test_loopClosure ${PROJECT_NAME}
         ${Open3D_LIBRARIES})
 
 add_executable(test_json src/tests/test_json.cpp)
-target_link_libraries(test_json ${PROJECT_NAME}
-                                    )
+target_link_libraries(test_json ${PROJECT_NAME})
 
+
+add_executable(test_ITE_frontend src/tests/test_ITE_frontend.cpp)
+
+target_link_libraries(test_ITE_frontend ${PROJECT_NAME})
 
 

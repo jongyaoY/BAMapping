@@ -230,6 +230,12 @@ Reader::readITEFrames(const char *cam_file, const char *obs_file, const char *da
         trans = R*Eigen::Vector3d(x,y,z);
         trans *= -1;
 
+        Eigen::Matrix4d Tcw;
+        Tcw.setIdentity();
+        Tcw.block<3,3>(0,0) = R;
+        Tcw.block<3,1>(0,3) = trans;
+        frame.Tcw_ = Tcw;
+
         frame.setFromQuaternionAndPoint(q.inverse(),trans);
         frame.setTimeStamp(t);
 

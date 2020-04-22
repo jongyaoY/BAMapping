@@ -32,6 +32,7 @@ int main(int argc, char** argv)
 
     Parser config(config_file);
     int n = config.getValue<int>("n_frames_per_fragment");
+    bool dense = config.getValue<bool>("global_use_dense_term");
 
     Graph graph;
     graph.setGraph(frameVec,ref_pointVec);
@@ -45,7 +46,8 @@ int main(int argc, char** argv)
 
         BundleAdjuster::optimize(subgraph, config_file.c_str(),false);
         Graph::WriteToFile(subgraph,graph_file.c_str());
-        Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
+        if(dense)
+            Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
     }
 
 }

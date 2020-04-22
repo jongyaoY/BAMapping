@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     std::string dataset_path = argv[1];
     std::string graph_file = dataset_path + argv[2];
     std::string mesh_file = dataset_path + argv[3];
-    std::string config_file = dataset_path + "ITE.yaml";
+    std::string config_file = dataset_path + argv[4];
 
     Graph graph;
     Graph::ReadFromeFile(graph,graph_file.c_str());

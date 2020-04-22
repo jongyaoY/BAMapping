@@ -178,7 +178,7 @@ bool Integrater::createRGBDImage(Parser config, const char *depth_file, const ch
     read = io::ReadImage(rgb_file,rgb);
     if(!read)
         return false;
-
+    
     rgbd = *geometry::RGBDImage::CreateFromColorAndDepth(
             rgb, depth, depth_factor,
             depth_truncate, grayScale);

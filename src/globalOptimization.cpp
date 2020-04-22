@@ -41,6 +41,9 @@ int main(int argc, char** argv)
     std::vector<std::string> plyNames;
 
     int n = config.getValue<int>("n_frames_per_fragment");
+    bool dense = config.getValue<bool>("global_use_dense_term");
+
+
     auto subgraphs = Graph::spliteIntoSubgraphs(n,graph);
     std::vector<Graph> subgraph_read;
     for(int id = 0; id < subgraphs.size(); id++)
@@ -72,7 +75,10 @@ int main(int argc, char** argv)
         std::cout<<"optimizing with fixed seperators: "<<id<<"/"<<subgraphs.size()<<std::endl;
         BundleAdjuster::optimize(subgraph, config_file.c_str(),true);
         Graph::WriteToFile(subgraph,graph_file.c_str());
-        Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
+
+        if(dense)
+            Integrater::integrateGraph(subgraph, config_file.c_str(), plyName.c_str(),true,Mat4::Identity(),false);
+
         id++;
     }
 

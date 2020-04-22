@@ -17,7 +17,7 @@ namespace BAMapping
         {
         public:
             void run(FrameVector& frameVector,const std::string config_file);
-
+            void runWithInitialGuess(FrameVector& frameVector,const std::string config_file);
             Mapping mMap;
         private:
             static std::vector<size_t> generateRandomIds(int num, int max_id, int min_id);

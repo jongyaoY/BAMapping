@@ -17,6 +17,7 @@ int main(int argc, char** argv)
     std::string cam_graph_file = dataset_path + "unoptimized.json";
     std::string cam_tum_file = dataset_path + "unoptimized_tum.txt";
     std::string ref_cam_tum_file = dataset_path + "groundtruth_tum.txt";
+    std::string ref_graph_file = dataset_path + "ref_graph.json";
     std::string voc_path = dataset_path + "ORBvoc.txt";
     std::string voc_path_gz = dataset_path +"ORBvoc.yml.gz";
     std::string db_path = dataset_path + "ORBdb_small.yml.gz";
@@ -28,18 +29,19 @@ int main(int argc, char** argv)
     auto frameVec = io::Reader::readITEFrames(cam_file.c_str(),
                                               (dataset_path + "observations.txt").c_str(),
                                               dataset_path.c_str(),1);
-//    auto ref_frameVec = io::Reader::readITEFrames(ref_cam_path.c_str(),
-//                                              (dataset_path + "observations.txt").c_str(),
-//                                              dataset_path.c_str(),1);
+    auto ref_frameVec = io::Reader::readITEFrames(ref_cam_path.c_str(),
+                                              (dataset_path + "observations.txt").c_str(),
+                                              dataset_path.c_str(),1);
     auto ref_pointVec = io::Reader::readPoints((dataset_path + "points.txt").c_str());
 
     Graph graph;
-//    Graph ref_graph;
-//    ref_graph.setGraph(ref_frameVec,{});
+    Graph ref_graph;
+    ref_graph.setGraph(ref_frameVec,{});
     graph.setGraph(frameVec,ref_pointVec);
     Graph::WriteToFile(graph,cam_graph_file.c_str());
-//    Writer::writeToFileTUMFormat(ref_graph,ref_cam_tum_file.c_str());
-//    Writer::writeToFileTUMFormat(graph,cam_tum_file.c_str());
+    Graph::WriteToFile(ref_graph,ref_graph_file.c_str());
+    Writer::writeToFileTUMFormat(ref_graph,ref_cam_tum_file.c_str());
+    Writer::writeToFileTUMFormat(graph,cam_tum_file.c_str());
 //
 //    Frontend frontend;
 //    std::vector<std::vector<cv::Mat > > features;

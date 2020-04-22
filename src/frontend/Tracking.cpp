@@ -37,36 +37,17 @@ bool Tracking::track(Frame &frame, const Frame* pRef_frame, std::vector<cv::DMat
     Mat4 Tts;
     auto matches_valid = GetSparsePointClouds(frame,ref_frame,matches,points,ref_points);
 
-    Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
+    bool success = Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
+
+    if(!success)
+    {
+        return false;
+    }
 
     Eigen::Affine3d Tcw;
     frame.Tcw_ = Tts.inverse() * ref_frame.Tcw_;
     Tcw.matrix() = frame.Tcw_;
     frame.setFromAffine3d(Tcw);
-//    Tcw.matrix() = ref_frame.Tcw_;
-
-//    Graph::Node node_s(frame.getConstTwc());
-//    Graph::Node node_t(ref_frame.getConstTwc());
-//    node_s.rgb_path_ = frame.getRGBImagePath();
-//    node_s.depth_path_ = frame.getDepthImagePath();
-//    node_t.rgb_path_ = ref_frame.getRGBImagePath();
-//    node_t.depth_path_ = ref_frame.getDepthImagePath();
-//
-//    std::shared_ptr<open3d::geometry::PointCloud> pcd_s;
-//    std::shared_ptr<open3d::geometry::PointCloud> pcd_t;
-
-//    GeometryMethods::createPointCloudFromNode(
-//            node_s,
-//            Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),Frame::m_width,Frame::m_height,
-//            pcd_s,
-//            true);
-//    GeometryMethods::createPointCloudFromNode(
-//            node_t,
-//            Vec4(Frame::m_fx,Frame::m_fy,Frame::m_cx,Frame::m_cy),Frame::m_width,Frame::m_height,
-//            pcd_t,
-//            true);
-//
-//    open3d::visualization::DrawGeometries({pcd_s,pcd_t});
 
     for(auto id : inliers)
     {
@@ -118,7 +99,7 @@ bool Tracking::match(const BAMapping::Frame &frame, const BAMapping::Frame& ref_
         inlier_matches.push_back(matches_valid[id]);
     }
     float score = (float) inlier_matches.size() / (float) frame.mKeypoints.size();
-    if(score < 0.1 || inlier_matches.size()<5) //todo
+    if(inlier_matches.size()<5) //todo score < 0.1 ||
     {
         return false;
     }
@@ -126,6 +107,68 @@ bool Tracking::match(const BAMapping::Frame &frame, const BAMapping::Frame& ref_
     {
         return true;
     }
+}
+
+bool Tracking::extractAndMatch(BAMapping::Frame &frame, const BAMapping::Frame *pRef_frame,
+                               std::vector<cv::DMatch> &inlier_matches)
+{
+    using namespace cv;
+    ExtractORB(frame);
+    if(pRef_frame == NULL)
+    {
+        Eigen::Affine3d Tcw;
+        frame.Tcw_ = Mat4::Identity();
+        Tcw.matrix() = frame.Tcw_;
+        frame.setFromAffine3d(Tcw);
+
+        return true;
+    }
+    auto ref_frame = *pRef_frame;
+    std::vector<DMatch> matches;
+    std::vector<DMatch> matches_inliers;
+
+    MatchORB(frame.mDescriptior,ref_frame.mDescriptior,matches);
+
+    std::vector<Vec3> points;
+    std::vector<Vec3> ref_points;
+    std::vector<size_t> inliers;
+    Mat4 Tts;
+    auto matches_valid = GetSparsePointClouds(frame,ref_frame,matches,points,ref_points);
+
+    bool success = Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
+
+    if(!success)
+    {
+        return false;
+    }
+
+    for(auto id : inliers)
+    {
+        matches_inliers.push_back(matches_valid[id]);
+        inlier_matches.push_back(matches_valid[id]);
+    }
+    Mat img1,img2,img3;
+    if(!frame.getInfraRedImagePath().empty())
+    {
+        img1 = imread(frame.getInfraRedImagePath());
+        img2 = imread(ref_frame.getInfraRedImagePath());
+    }
+    else
+    {
+        img1 = imread(frame.getRGBImagePath());
+        img2 = imread(ref_frame.getRGBImagePath());
+    }
+    if(!img1.empty()&&!img2.empty())
+    {
+        drawMatches(img1,frame.mKeypoints,img2,ref_frame.mKeypoints,matches_inliers,img3);
+        imshow("matches",img3);
+        waitKey(1);
+    }
+    else
+    {
+        cv::destroyWindow("matches");
+    }
+    return true;
 }
 
 void Tracking::ExtractORB(BAMapping::Frame &frame)
