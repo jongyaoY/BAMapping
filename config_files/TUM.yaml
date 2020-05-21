@@ -1,0 +1,45 @@
+%YAML:1.0
+
+debug_mode: true
+use_submap: ture
+n_frames_per_fragment: 5
+n_overlap_frames: 0
+#
+Integrater.volume_size: 6.0
+Integrater.resolution: 800.0
+Integrater.sdf_trunc: 0.07
+Integrater.color: true
+Integrater.every_n_frames: 1
+Integrater.depth_truncate: 4.0
+Integrater.depth_factor: 5000.0
+# volume//0.03
+voxel_size: 0.03
+global_voxel_size: 0.05
+volume_size: 4.0
+depth_factor: 5000.0
+depth_truncate: 2.0
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 517.306408
+Camera.fy: 516.469215
+Camera.cx: 318.643040
+Camera.cy: 255.313989
+Camera.k1: 0.
+Camera.k2: 0.
+Camera.width: 640
+Camera.height: 480
+
+
+#for dense optimization
+use_dense_term: false
+local_sparse_weight: 0.2
+local_use_point_to_plane: true
+
+global_use_dense_term: false
+global_sparse_weight: 0.9
+global_use_point_to_plane: true
+std_ratio: 1.0
+nb_neighbors: 200
+
+
+
