@@ -5,9 +5,14 @@
 #ifndef RECONSTRUCTION3D_GEOMETRYMETHODS_H
 #define RECONSTRUCTION3D_GEOMETRYMETHODS_H
 
-#include "util/Parser.h"
-#include "Open3D/Open3D.h"
 #include "Graph.h"
+#include "util/Parser.h"
+
+#include "Open3D/Open3D.h"
+#include "Open3D/Registration/Registration.h"
+#include "Open3D/Geometry/PointCloud.h"
+#include "Open3D/Geometry/KDTreeFlann.h"
+#include "Open3D/Geometry/KDTreeSearchParam.h"
 
 namespace BAMapping
 {
@@ -36,6 +41,11 @@ namespace BAMapping
                 std::shared_ptr<open3d::geometry::PointCloud>& pcd,
                 bool color = false
         );
+        static open3d::registration::RegistrationResult GetCorrespondencesNearestNeighbor(
+                const open3d::geometry::PointCloud &source_cs,
+                const open3d::geometry::PointCloud &target,
+                double max_correspondence_distance,
+                const Eigen::Matrix4d &transformation);
     };
 }
 

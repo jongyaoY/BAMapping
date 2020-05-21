@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 //    frameVec.clear();
 //    frameVec = io::Reader::readTUMFrames(dataset_path,cam_file,asso_path);
 
-    Integrater::integrateGraph(graph,config_file.c_str(),ply_path.c_str(), false,Mat4::Identity(),true);
+//    Integrater::integrateGraph(graph,config_file.c_str(),ply_path.c_str(), false,Mat4::Identity(),true);
     Viewer viewer;
     viewer.setFrames(frameVec);
     viewer.setPoints(frontend.mMap.getMapPoints());

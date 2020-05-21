@@ -4,7 +4,7 @@
 
 #include "BundleAdjuster.h"
 //#include "imu_factor.h"
-#include "PhotoGeoFactor.h"
+//#include "PhotoGeoFactor.h"
 #include "ReprojectionFactor.h"
 #include "GeometryMethods.h"
 
@@ -99,9 +99,9 @@ void BundleAdjuster::optimize(BAMapping::Graph &graph, const char* config_file,c
 
 //            open3d::visualization::DrawGeometries({source_down,target_down});
 //            target_down->normals_.resize(target_down->points_.size());
-            target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
+            target_down->EstimateNormals(open3d::geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
-            auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size/2.0,node_t.pose_.inverse()*node_s.pose_);
+            auto result = GeometryMethods::GetCorrespondencesNearestNeighbor(*source_down,*target_down,voxel_size/2.0,node_t.pose_.inverse()*node_s.pose_);
             for(auto corr : result.correspondence_set_)
             {
                 auto s = corr[0];
@@ -251,6 +251,7 @@ void BundleAdjuster::optimizePose(Mat4 &Twc, const Mat4 &Twc_ref, const Vec4 &in
 
 void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const std::vector<std::string>& plyNames)
 {
+    using namespace open3d;
     Parser config(config_file);
     ceres::Problem problem;
     auto extrinsics = packCameraParam(graph);
@@ -315,7 +316,7 @@ void BundleAdjuster::optimizeGlobal(Graph &graph, const char *config_file, const
 
                 target_down->EstimateNormals(geometry::KDTreeSearchParamHybrid(voxel_size*2.0,30));
 
-                auto result = GeoFactor_single::GetRegistrationResultAndCorrespondences(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
+                auto result = GeometryMethods::GetCorrespondencesNearestNeighbor(*source_down,*target_down,voxel_size,node_t.pose_.inverse()*node_s.pose_);
 
                 for(auto corr : result.correspondence_set_)
                 {

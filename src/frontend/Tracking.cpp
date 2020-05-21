@@ -39,43 +39,55 @@ bool Tracking::track(Frame &frame, const Frame* pRef_frame, std::vector<cv::DMat
 
     bool success = Alignment3D_ransac::Align(points,ref_points,Tts,inliers,Alignment3D_ransac::Params());
 
-    if(!success)
+    if(success)
     {
+        for(auto id : inliers)
+        {
+            matches_inliers.push_back(matches_valid[id]);
+            inlier_matches.push_back(matches_valid[id]);
+        }
+        Mat img1,img2,img3;
+        if(!frame.getInfraRedImagePath().empty())
+        {
+            img1 = imread(frame.getInfraRedImagePath());
+            img2 = imread(ref_frame.getInfraRedImagePath());
+        }
+        else
+        {
+            img1 = imread(frame.getRGBImagePath());
+            img2 = imread(ref_frame.getRGBImagePath());
+        }
+        if(!img1.empty()&&!img2.empty())
+        {
+            drawMatches(img1,frame.mKeypoints,img2,ref_frame.mKeypoints,matches_inliers,img3);
+            imshow("matches",img3);
+            waitKey(1);
+        }
+        else
+        {
+            cv::destroyWindow("matches");
+        }
+
+
+
+        Eigen::Affine3d Tcw;
+        frame.Tcw_ = Tts.inverse() * ref_frame.Tcw_;
+        Tcw.matrix() = frame.Tcw_;
+        frame.setFromAffine3d(Tcw);
+
+
+        return true;
+    }
+    else
+    {
+        Eigen::Affine3d Tcw;
+        frame.Tcw_ = ref_frame.Tcw_;
+        Tcw.matrix() = frame.Tcw_;
+        frame.setFromAffine3d(Tcw);
         return false;
     }
 
-    Eigen::Affine3d Tcw;
-    frame.Tcw_ = Tts.inverse() * ref_frame.Tcw_;
-    Tcw.matrix() = frame.Tcw_;
-    frame.setFromAffine3d(Tcw);
 
-    for(auto id : inliers)
-    {
-        matches_inliers.push_back(matches_valid[id]);
-        inlier_matches.push_back(matches_valid[id]);
-    }
-    Mat img1,img2,img3;
-    if(!frame.getInfraRedImagePath().empty())
-    {
-        img1 = imread(frame.getInfraRedImagePath());
-        img2 = imread(ref_frame.getInfraRedImagePath());
-    }
-    else
-    {
-        img1 = imread(frame.getRGBImagePath());
-        img2 = imread(ref_frame.getRGBImagePath());
-    }
-    if(!img1.empty()&&!img2.empty())
-    {
-        drawMatches(img1,frame.mKeypoints,img2,ref_frame.mKeypoints,matches_inliers,img3);
-        imshow("matches",img3);
-        waitKey(1);
-    }
-    else
-    {
-        cv::destroyWindow("matches");
-    }
-    return true;
 }
 
 bool Tracking::match(const BAMapping::Frame &frame, const BAMapping::Frame& ref_frame,
@@ -238,7 +250,7 @@ std::vector<cv::DMatch> Tracking::GetSparsePointClouds(const BAMapping::Frame &f
         auto ref_kp = ref_frame.mKeypoints[match.trainIdx];
         auto ref_kp_d = ref_frame.mKeyPointsDepth[match.trainIdx];
 
-        if(kp_d < 0.001 || kp_d > 4.0 || ref_kp_d < 0.001 || ref_kp_d > 4.0)//
+        if(kp_d < 0.001 || kp_d > 10.0 || ref_kp_d < 0.001 || ref_kp_d > 10.0)//todo
         {
             continue;
         }

@@ -21,15 +21,16 @@ bool Alignment3D_ransac::Align(
     {
         return false;
     }
-    if(source.empty())
-    {
-        return false;
-    }
     if(source.size() < 5)
     {
         std::cout<<"less then 5 correspondences"<<std::endl;
         return false;
     }
+    if(source.empty())
+    {
+        return false;
+    }
+
     //ransac find set of inliers
     for(int it = 0; it < params.iterations; it++)
     {

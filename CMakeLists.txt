@@ -7,42 +7,12 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 
-#find_path(CHOLMOD_INCLUDE_DIR
-#  NAMES
-#  cholmod.h
-#  PATHS
-#  $ENV{CHOLMODDIR}
-#  ${INCLUDE_INSTALL_DIR}
-#  PATH_SUFFIXES
-#  suitesparse
-#  ufsparse
-#)
-#include_directories(${CHOLMOD_INCLUDE_DIR})
-#find_library(CHOLMOD_LIBRARY
-#    NAMES cholmod libcholmod
-#    PATHS $ENV{CHOLMODDIR} ${LIB_INSTALL_DIR})
-
-#set(CHOLMOD_LIBRARIES ${CHOLMOD_LIBRARY})
-
-
-
-#find_package(PCL REQUIRED)
-#include_directories(${PCL_INCLUDE_DIRS})
-#link_directories(${PCL_LIBRARY_DIRS})
-#add_definitions(${PCL_DEFINITIONS})
-
 find_package(Ceres REQUIRED PATHS libs/ceres_lib)
 include_directories(${CERES_INCLUDE_DIRS})
 
-#include_directories(${GFLAGS_INCLUDE_DIRS})
-#add_definitions(-DCERES_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
 
 find_package(Pangolin 0.4 REQUIRED PATHS libs/pangolin_lib)
 include_directories(${Pangolin_INCLUDE_DIRS})
-
-#find_package(CPUTSDF REQUIRED PATHS third_party/cpu_tsdf/build)
-#include_directories(${CPUTSDF_INCLUDE_DIRS})
-#link_directories(${CPUTSDF_LIBRARY_DIRS})
 
 find_package(DBoW2 REQUIRED PATHS libs/dbow_lib/lib/cmake)
 include_directories(${DBoW2_INCLUDE_DIRS})
@@ -65,7 +35,7 @@ add_definitions(-O3)
 link_directories(${Open3D_LIBRARY_DIRS})
 
 
-include_directories(${PROJECT_SOURCE_DIR}/libs/orbslam_lib/include)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_library(${PROJECT_NAME} SHARED
             src/util/Parser.cpp
@@ -90,87 +60,89 @@ add_library(${PROJECT_NAME} SHARED
             src/io/Writer.cpp
             src/util/Converter.cpp
             src/util/Converter.h)
-#add_library(${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME}
                                  ceres
-#                                 ${CHOLMOD_LIBRARIES}
-#                                 ${GFLAGS_LIBRARIES}
                                  ${DBoW2_LIBRARIES}
                                  ${Pangolin_LIBRARIES}
                                  ${Open3D_LIBRARIES}
                                  ${OpenCV_LIBS}
                         )
 
-#add_executable(System src/System.cpp)
-#
-#target_link_libraries(System ${PROJECT_NAME})
-
-#add_executable(test_bundleAdjuster src/tests/test_bundleAdjuster.cpp)
-#
-#target_link_libraries(test_bundleAdjuster ${PROJECT_NAME}
-#                                        ${Open3D_LIBRARIES})
 
 
-#
-#add_executable(test_orbslam src/tests/test_orbslam.cpp)
-#target_link_libraries(test_orbslam  ${PROJECT_SOURCE_DIR}/libs/orbslam_lib/lib/libORB_SLAM2.so
-#                                    ${OpenCV_LIBS}
-#                                    ${Pangolin_LIBRARIES}
-#                                    )
+##TUM
+add_executable(runFrontendTUM src/examples/runFrontendTUM.cpp)
 
-add_executable(submapOptimization src/submapOptimization.cpp)
+target_link_libraries(runFrontendTUM ${PROJECT_NAME})
 
-target_link_libraries(submapOptimization ${PROJECT_NAME}
-                                        ${Open3D_LIBRARIES})
-add_executable(subMapOptimizeTUM src/subMapOptimizeTUM.cpp)
+add_executable(runBackendTUM src/examples/runBackendTUM.cpp)
 
-target_link_libraries(subMapOptimizeTUM ${PROJECT_NAME}
+target_link_libraries(runBackendTUM ${PROJECT_NAME}
                                     ${Open3D_LIBRARIES})
+##ITE
 
-add_executable(globalOptimization src/globalOptimization.cpp)
+add_executable(runFrontendITE src/examples/runFrontendITE.cpp)
+
+target_link_libraries(runFrontendITE ${PROJECT_NAME})
+
+add_executable(runBackendITE src/examples/runBackendITE.cpp)
+
+target_link_libraries(runBackendITE ${PROJECT_NAME})
+
+add_executable(runFrontend src/examples/runFrontend.cpp)
+target_link_libraries(runFrontend ${PROJECT_NAME})
+
+add_executable(localOptimization src/examples/localOptimization.cpp)
+
+target_link_libraries(localOptimization ${PROJECT_NAME}
+        ${Open3D_LIBRARIES})
+
+add_executable(globalOptimization src/examples/globalOptimization.cpp)
 
 target_link_libraries(globalOptimization ${PROJECT_NAME}
                                         ${Open3D_LIBRARIES})
 
+##tools
+
 add_executable(Visualizer src/Visualizer.cpp)
 target_link_libraries(Visualizer ${Open3D_LIBRARIES})
 
-add_executable(integrateGraph src/integrateGraph.cpp)
+add_executable(integrateGraph src/examples/integrateGraph.cpp)
 
 target_link_libraries(integrateGraph ${PROJECT_NAME}
                                  ${Open3D_LIBRARIES})
 
-add_executable(createVocabulary src/createVocabulary.cpp)
+add_executable(createVocabulary src/examples/createVocabulary.cpp)
 target_link_libraries(createVocabulary ${PROJECT_NAME})
 
-add_executable(runFrontend src/runFrontend.cpp)
-target_link_libraries(runFrontend ${PROJECT_NAME})
-
-add_executable(test_Submap src/tests/test_Submap.cpp)
-
-target_link_libraries(test_Submap ${PROJECT_NAME}
-                                  ${Open3D_LIBRARIES})
-
-add_executable(test_correspondence src/tests/test_correspondence.cpp)
-
-target_link_libraries(test_correspondence ${PROJECT_NAME}
-                                    ${Open3D_LIBRARIES})
-
-add_executable(test_odometry src/tests/test_odometry.cpp)
-
-target_link_libraries(test_odometry ${PROJECT_NAME})
-
-add_executable(test_loopClosure src/tests/test_loopClosure.cpp)
-
-target_link_libraries(test_loopClosure ${PROJECT_NAME}
-        ${Open3D_LIBRARIES})
-
-add_executable(test_json src/tests/test_json.cpp)
-target_link_libraries(test_json ${PROJECT_NAME})
 
 
-add_executable(test_ITE_frontend src/tests/test_ITE_frontend.cpp)
 
-target_link_libraries(test_ITE_frontend ${PROJECT_NAME})
+
+
+
+#add_executable(test_Submap src/tests/test_Submap.cpp)
+#
+#target_link_libraries(test_Submap ${PROJECT_NAME}
+#                                  ${Open3D_LIBRARIES})
+#
+#add_executable(test_correspondence src/tests/test_correspondence.cpp)
+#
+#target_link_libraries(test_correspondence ${PROJECT_NAME}
+#                                    ${Open3D_LIBRARIES})
+#
+#
+#
+#add_executable(test_loopClosure src/tests/test_loopClosure.cpp)
+#
+#target_link_libraries(test_loopClosure ${PROJECT_NAME}
+#        ${Open3D_LIBRARIES})
+#
+#add_executable(test_json src/tests/test_json.cpp)
+#target_link_libraries(test_json ${PROJECT_NAME})
+
+
+
 
 

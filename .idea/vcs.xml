@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/Eigen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/PoissonRecon" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/fmt" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/libjpeg-turbo/libjpeg-turbo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/open3d_sphinx_theme" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/pybind11" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/pybind11/tools/clang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/qhull" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/tinygltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/tinyobjloader" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Open3D/3rdparty/tinyobjloader/pybind11/tools/clang" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third_party/Pangolin" vcs="Git" />
+  </component>
+</project>

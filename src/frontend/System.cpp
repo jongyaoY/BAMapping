@@ -27,21 +27,53 @@ void System::run(FrameVector &frameVector, const std::string config_file)
     LoopClosing loopClosing;
     loopClosing.init(voc_path,true);
 
+    std::vector<size_t> invalid_frameIds;
     Frame ref_frame;
     Frame* pRef_frame;
+    size_t consecutive_invalid = 0;
     for(int i = 0; i < frameVector.size(); i++)
     {
         std::vector<cv::DMatch> inlier_matches;
         auto& frame = frameVector[i];
         frame.mGlobalIndex = i;
         if(i == 0)
+        {
             Tracking::track(frame,NULL,inlier_matches);
+            pRef_frame = &frameVector[i];
+        }
         else
         {
-            pRef_frame = &frameVector[i-1];
-            ref_frame = frameVector[i-1];
+            ref_frame = *pRef_frame;
             bool success = Tracking::track(frame,&ref_frame,inlier_matches);
-            mMap.updateMap(frame,*pRef_frame,inlier_matches,false);
+            if(success)
+            {
+                mMap.updateMap(frame,*pRef_frame,inlier_matches,false);
+                consecutive_invalid = 0;
+                pRef_frame = &frameVector[i];
+
+            }
+            else
+            {
+//                invalid_frameIds.push_back(i);
+                std::cout<<"skip frame "<< i << std::endl;
+                Eigen::Affine3d Tcw;
+                frame.Tcw_ = ref_frame.Tcw_;
+                Tcw.matrix() = frame.Tcw_;
+                frame.setFromAffine3d(Tcw);
+                pRef_frame = &frameVector[i];
+//                consecutive_invalid++;
+//                if(consecutive_invalid > 5)
+//                {
+//                    consecutive_invalid = 0;
+//                    std::cout<<"consecutive 5 invalied frames "<<std::endl;
+//                    Eigen::Affine3d Tcw;
+//                    frame.Tcw_ = ref_frame.Tcw_;
+//                    Tcw.matrix() = frame.Tcw_;
+//                    frame.setFromAffine3d(Tcw);
+//                    pRef_frame = &frameVector[i];
+//                }
+//                continue;
+            }
         }
         auto offset_id = generateRandomIds(5,20,2);//offset
         std::vector<int> neighbor_ids;
@@ -79,6 +111,17 @@ void System::run(FrameVector &frameVector, const std::string config_file)
             }
         }
     }
+
+//    FrameVector out_frameVector;
+//    for(int i = 0 ;i < frameVector.size(); i++)
+//    {
+//        if(std::find(invalid_frameIds.begin(),invalid_frameIds.end(),i) != invalid_frameIds.end())
+//            continue;
+//        out_frameVector.push_back(frameVector[i]);
+//    }
+//    frameVector.clear();
+//    frameVector = out_frameVector;
+
 }
 
 
