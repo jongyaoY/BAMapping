@@ -5,7 +5,7 @@ This framework can reconstruct 3D scenes from RGB-D images.
 
 **21 May 2020**: Formal version
 
-#1.Prerequisites
+# 1.Prerequisites
 
 ## C++11 Compiler
 
@@ -42,20 +42,20 @@ cmake ..
 cmake -DCMAKE_INSTALL_PREFIX="../libs/pangolin_lib" --build .
 make install
 ```
-##DBoW2
+## DBoW2
 The [DBoW2](https://github.com/dorian3d/DBoW2) library is utilized to detect loop closures.
 Install the library under: "libs/dbow_lib/" 
 
-##ORB vocabulary
+## ORB vocabulary
 For loop closure detection, we used the vocabulary file provided in [ORB SLAM2](https://github.com/raulmur/ORB_SLAM2/tree/master/Vocabulary). Download and extract
 then put it under "Voc/"
 
-##Ceres Solver
+## Ceres Solver
 We used [Ceres Solver](http://ceres-solver.org/) to solve non-linear optimization problem. Install instruction can be found at: http://ceres-solver.org/installation.html.
 Install the library under: "libs/ceres_libs/" 
 
 
-#2.Build
+# 2.Build
 
 ```bash
 cd BAMapping/
@@ -64,11 +64,11 @@ cd ./build/
 cmake ..
 cmake --build .
 ```
-#3.Deployment
+# 3.Deployment
 Make sure that the vocabulary file ORBvoc.txt is under "Voc/" and adjust the parameters in 
 configuration files! In TUM dataset, camera intrinsics are not always the same.
 
-##ITE dataset
+## ITE dataset
 The dataset folders should be organized as:
 
     
@@ -93,7 +93,7 @@ runBackenITE ../dataset/some_ITE_dataset/
 
 ![ITE_Office](img/ITE_Office.png)
 
-##TUM dataset
+## TUM dataset
 First associate the dataset according to https://vision.in.tum.de/data/datasets/rgbd-dataset/tools 
 and copy the generated file to dataset's path.
 The dataset folders should be organized as:
