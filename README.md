@@ -91,8 +91,6 @@ launch the back end
 runBackenITE ../dataset/some_ITE_dataset/
 ```
 
-![ITE_Office](img/ITE_Office.png)
-
 ## TUM dataset
 First associate the dataset according to https://vision.in.tum.de/data/datasets/rgbd-dataset/tools 
 and copy the generated file to dataset's path.
@@ -116,4 +114,12 @@ launch the back end
 ```bash
 runBackenTUM ../dataset/some_ITE_dataset/
 ```
+*fr2desk*
 ![](img/TUM_fr2desk.png)
+*fr1desk*
+![](img/TUM_fr1desk.png)    
+*fr1room*
+![](img/TUM_fr1room.png)
+*fr3long_office*
+![](img/TUM_long_office.png)
+
