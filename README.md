@@ -114,6 +114,8 @@ launch the back end
 ```bash
 runBackenTUM ../dataset/some_ITE_dataset/
 ```
+*performace*
+![](img/performance.png)
 *fr2desk*
 ![](img/TUM_fr2desk.png)
 *fr1desk*
